@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'account_settings_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'add_meal_dialog.dart';
+import 'create_recipe_screen.dart';
+import 'recipes_screen.dart';
 import 'auth_wrapper.dart';
 import '/services/auth_service.dart';
 import '/services/user_data_service.dart';
-import '/models/daily_log.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,6 +17,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+    String protein = '';
+    String fats = '';
+    String carbs = '';
   final _authService = AuthService();
   int selectedBottomIndex = 0;
   int selectedDay = 21;
@@ -26,7 +32,10 @@ class _HomeScreenState extends State<HomeScreen> {
   int calendarSelectedDay = 21;
   DateTime _selectedDate = DateTime.now();
   int selectedWaterCups = 1;
-  List<String> todayMeals = [];
+  List<String> breakfast = [];
+  List<String> lunch = [];
+  List<String> dinner = [];
+  List<String> snacks = [];
   bool isLoadingLog = false;
 
   List<String> weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -35,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _loadLogForDate(_selectedDate);
+    _loadUserMacros();
   }
 
   Future<void> _loadLogForDate(DateTime date) async {
@@ -44,24 +54,46 @@ class _HomeScreenState extends State<HomeScreen> {
     if (log != null) {
       setState(() {
         selectedWaterCups = ((log['waterMl'] ?? 0) / 250).round();
-        todayMeals = List<String>.from(log['meals'] ?? []);
+        breakfast = List<String>.from(log['breakfast'] ?? []);
+        lunch = List<String>.from(log['lunch'] ?? []);
+        dinner = List<String>.from(log['dinner'] ?? []);
+        snacks = List<String>.from(log['snacks'] ?? []);
       });
     } else {
       setState(() {
         selectedWaterCups = 0;
-        todayMeals = [];
+        breakfast = [];
+        lunch = [];
+        dinner = [];
+        snacks = [];
       });
     }
     setState(() => isLoadingLog = false);
+
+  }
+
+  Future<void> _loadUserMacros() async {
+    final userDataService = UserDataService();
+    final data = await userDataService.getUserData();
+    if (data != null) {
+      setState(() {
+        protein = data['protein']?.toString() ?? '';
+        fats = data['fats']?.toString() ?? '';
+        carbs = data['carbs']?.toString() ?? '';
+      });
+    }
   }
 
   Future<void> _saveLogForDate(DateTime date) async {
     final userDataService = UserDataService();
-    await userDataService.saveDailyLog(
-      date: date,
-      waterMl: selectedWaterCups * 250,
-      meals: todayMeals,
-    );
+      await userDataService.saveDailyLog(
+        date: date,
+        waterMl: selectedWaterCups * 250,
+        breakfast: [],
+        lunch: [],
+        dinner: [],
+        snacks: [],
+      );
   }
 
   @override
@@ -87,16 +119,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 _buildMealCard(
                   'Breakfast',
                   '320/460 kcal',
-                  [
-                    {'id': 'breakfast_shakshouka', 'name': 'Shakshouka', 'calories': '150g/120 kcal', 'icon': '🍳'},
-                    {'id': 'breakfast_salad', 'name': 'Salad', 'calories': '100g/60 kcal', 'icon': '🥗'},
-                    {'id': 'breakfast_juice', 'name': 'Orange juice', 'calories': '250ml/80 kcal', 'icon': '🥤'},
-                  ],
+                  breakfast,
+                  (meal) => _addMealDialog('Breakfast'),
                 ),
                 const SizedBox(height: 12),
-                _buildMealCard('Lunch time', '320/460 kcal', []),
+                _buildMealCard(
+                  'Lunch',
+                  '320/460 kcal',
+                  lunch,
+                  (meal) => _addMealDialog('Lunch'),
+                ),
                 const SizedBox(height: 12),
-                _buildMealCard('Dinner', '300/360 kcal', []),
+                _buildMealCard(
+                  'Dinner',
+                  '300/360 kcal',
+                  dinner,
+                  (meal) => _addMealDialog('Dinner'),
+                ),
                 const SizedBox(height: 100),
               ],
             ),
@@ -110,14 +149,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeader() {
     return Row(
       children: [
-        Container(
-          width: 60,
-          height: 60,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            image: const DecorationImage(
-              image: NetworkImage('https://i.pravatar.cc/150?img=12'),
-              fit: BoxFit.cover,
+        GestureDetector(
+          onTap: () async {
+            await Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AccountSettingsScreen()),
+            );
+            await _loadUserMacros();
+          },
+          child: Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              image: const DecorationImage(
+                image: NetworkImage('https://i.pravatar.cc/150?img=12'),
+                fit: BoxFit.cover,
+              ),
             ),
           ),
         ),
@@ -181,11 +228,11 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          _buildMacroRow('Protein', '52/70'),
+          _buildMacroRow('Protein', protein),
           const SizedBox(height: 16),
-          _buildMacroRow('Fats', '52/70'),
+          _buildMacroRow('Fats', fats),
           const SizedBox(height: 16),
-          _buildMacroRow('Carbohydrates', '52/70'),
+          _buildMacroRow('Carbohydrates', carbs),
         ],
       ),
     );
@@ -388,9 +435,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMealCard(String title, String calories, List<Map<String, String>> items) {
+  Widget _buildMealCard(String title, String calories, List<String> items, Function(String) onAddMeal) {
     final isExpanded = expandedMeal == title;
-    
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -436,82 +482,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ],
             ),
-            if (isExpanded && items.isNotEmpty) ...[
+            if (isExpanded) ...[
               const SizedBox(height: 16),
-              ...items.map((item) {
-                final mealId = item['id']!;
-                final isChecked = checkedMeals.contains(mealId);
-                
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        if (isChecked) {
-                          checkedMeals.remove(mealId);
-                        } else {
-                          checkedMeals.add(mealId);
-                        }
-                      });
-                    },
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF5F5F5),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Text(
-                              item['icon']!,
-                              style: const TextStyle(fontSize: 24),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            item['name']!,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          item['calories']!,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            color: Color(0xFF666666),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: isChecked ? Colors.black : Colors.white,
-                            border: Border.all(color: Colors.black, width: 2),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: isChecked
-                              ? const Icon(
-                                  Icons.check,
-                                  size: 14,
-                                  color: Colors.white,
-                                )
-                              : null,
-                        ),
-                      ],
+              ...items.map((meal) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  children: [
+                    const Icon(Icons.restaurant, size: 24, color: Colors.black),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        meal,
+                        style: const TextStyle(fontSize: 16, color: Colors.black),
+                      ),
                     ),
-                  ),
-                );
-              }),
+                  ],
+                ),
+              )),
               const SizedBox(height: 8),
               GestureDetector(
-                onTap: () {},
+                onTap: () => onAddMeal(title),
                 child: const Text(
                   'Add meal +',
                   style: TextStyle(
@@ -525,6 +515,39 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  void _addMealDialog(String mealType) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AddMealDialog(
+          mealType: mealType,
+          onRecipeSelected: (recipe) async {
+            setState(() {
+              if (mealType == 'Breakfast') breakfast.add(recipe['name']);
+              if (mealType == 'Lunch') lunch.add(recipe['name']);
+              if (mealType == 'Dinner') dinner.add(recipe['name']);
+            });
+            // Save to Firestore
+            final userDataService = UserDataService();
+            await userDataService.saveDailyLog(
+              date: _selectedDate,
+              waterMl: selectedWaterCups * 250,
+              breakfast: breakfast,
+              lunch: lunch,
+              dinner: dinner,
+              snacks: snacks,
+            );
+          },
+          onCreateRecipe: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => CreateRecipeScreen()),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -574,6 +597,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       setState(() {
                         selectedBottomIndex = 1;
                       });
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const RecipesScreen()),
+                      );
                     },
                     child: Container(
                       width: 60,
@@ -583,7 +609,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
-                        Icons.book_outlined,
+                        Icons.restaurant_menu,
                         color: Colors.black,
                         size: 28,
                       ),

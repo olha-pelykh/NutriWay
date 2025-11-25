@@ -117,8 +117,11 @@ class UserDataService {
   // Зберегти лог води та страви на день
   Future<void> saveDailyLog({
     required DateTime date,
-    required int waterMl,
-    required List<String> meals,
+    int waterMl = 0,
+    List<String>? breakfast,
+    List<String>? lunch,
+    List<String>? dinner,
+    List<String>? snacks,
   }) async {
     if (currentUserId == null) throw Exception('User not authenticated');
     final logId = date.toIso8601String().substring(0, 10); // YYYY-MM-DD
@@ -130,7 +133,10 @@ class UserDataService {
         .set({
       'date': logId,
       'waterMl': waterMl,
-      'meals': meals,
+      'breakfast': breakfast ?? [],
+      'lunch': lunch ?? [],
+      'dinner': dinner ?? [],
+      'snacks': snacks ?? [],
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
   }
@@ -145,7 +151,19 @@ class UserDataService {
         .collection('dailyLogs')
         .doc(logId)
         .get();
-    return doc.data();
+    final data = doc.data();
+    if (data == null) {
+      // Якщо запису немає, повертаємо порожні поля
+      return {
+        'date': logId,
+        'waterMl': 0,
+        'breakfast': [],
+        'lunch': [],
+        'dinner': [],
+        'snacks': [],
+      };
+    }
+    return data;
   }
 
   // Отримати всі логи за місяць
