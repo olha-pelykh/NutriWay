@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dietary_preferences_screen.dart';
+import '/models/onboarding_data.dart';
 
 class AboutYouScreen extends StatefulWidget {
-  const AboutYouScreen({super.key});
+  final OnboardingData onboardingData;
+
+  const AboutYouScreen({super.key, required this.onboardingData});
 
   @override
   State<AboutYouScreen> createState() => _AboutYouScreenState();
@@ -84,10 +87,16 @@ class _AboutYouScreenState extends State<AboutYouScreen> {
     }
 
     if (!hasError) {
+      widget.onboardingData.age = int.parse(ageController.text);
+      widget.onboardingData.height = int.parse(heightController.text);
+      widget.onboardingData.weight = int.parse(weightController.text);
+      
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => const DietaryPreferencesScreen(),
+          builder: (context) => DietaryPreferencesScreen(
+            onboardingData: widget.onboardingData,
+          ),
         ),
       );
     }

@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'meal_preferences_screen.dart';
+import '/models/onboarding_data.dart';
 
 class AllergiesScreen extends StatefulWidget {
-  const AllergiesScreen({super.key});
+  final OnboardingData onboardingData;
+
+  const AllergiesScreen({super.key, required this.onboardingData});
 
   @override
   State<AllergiesScreen> createState() => _AllergiesScreenState();
@@ -61,10 +64,14 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
             const Spacer(),
             GestureDetector(
               onTap: () {
+                widget.onboardingData.allergies = selectedAllergies.toList();
+                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const MealPreferencesScreen(),
+                    builder: (context) => MealPreferencesScreen(
+                      onboardingData: widget.onboardingData,
+                    ),
                   ),
                 );
               },

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../home_screen.dart';
+import '/models/onboarding_data.dart';
+import '/services/user_data_service.dart';
 
 class MealPreferencesScreen extends StatefulWidget {
-  const MealPreferencesScreen({super.key});
+  final OnboardingData onboardingData;
+
+  const MealPreferencesScreen({super.key, required this.onboardingData});
 
   @override
   State<MealPreferencesScreen> createState() => _MealPreferencesScreenState();
@@ -111,17 +115,86 @@ class _MealPreferencesScreenState extends State<MealPreferencesScreen> {
             const Spacer(),
             GestureDetector(
               onTap: () async {
-                // Mark onboarding as completed
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('onboarding_completed', true);
+                // Зберігаємо дані про їжу
+                widget.onboardingData.mealTypes = selectedMeals.toList();
+                widget.onboardingData.snacksCount = selectedSnacks;
                 
-                if (!mounted) return;
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HomeScreen(),
+                // Перевіряємо чи всі дані заповнені
+                if (widget.onboardingData.firstName == null ||
+                    widget.onboardingData.lastName == null ||
+                    widget.onboardingData.gender == null ||
+                    widget.onboardingData.goal == null ||
+                    widget.onboardingData.age == null ||
+                    widget.onboardingData.height == null ||
+                    widget.onboardingData.weight == null ||
+                    widget.onboardingData.dietaryPreferences == null ||
+                    widget.onboardingData.allergies == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please complete all previous steps'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                  return;
+                }
+                
+                // Показуємо індикатор завантаження
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(),
                   ),
                 );
+                
+                // Зберігаємо всі дані в Firestore
+                try {
+                  final userDataService = UserDataService();
+                  await userDataService.saveUserOnboardingData(
+                    firstName: widget.onboardingData.firstName!,
+                    lastName: widget.onboardingData.lastName!,
+                    gender: widget.onboardingData.gender!,
+                    goal: widget.onboardingData.goal!,
+                    age: widget.onboardingData.age!,
+                    height: widget.onboardingData.height!,
+                    weight: widget.onboardingData.weight!,
+                    activityLevel: 'Moderate',
+                    dietaryPreferences: widget.onboardingData.dietaryPreferences!,
+                    allergies: widget.onboardingData.allergies!,
+                    mealTypes: widget.onboardingData.mealTypes!,
+                    snacksCount: widget.onboardingData.snacksCount!,
+                  );
+                  
+                  // Mark onboarding as completed
+                  final prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('onboarding_completed', true);
+                  
+                  if (!mounted) return;
+                  
+                  // Закриваємо діалог завантаження
+                  Navigator.pop(context);
+                  
+                  // Переходимо на HomeScreen
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const HomeScreen(),
+                    ),
+                  );
+                } catch (e) {
+                  if (!mounted) return;
+                  
+                  // Закриваємо діалог завантаження
+                  Navigator.pop(context);
+                  
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error saving data: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                      duration: const Duration(seconds: 5),
+                    ),
+                  );
+                }
               },
               child: Container(
                 width: double.infinity,

@@ -2,9 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'about_you_screen.dart';
 import '../auth_wrapper.dart';
+import '/models/onboarding_data.dart';
 
 class GoalScreen extends StatefulWidget {
-  const GoalScreen({super.key});
+  final String? firstName;
+  final String? lastName;
+  final String? gender;
+
+  const GoalScreen({
+    super.key,
+    this.firstName,
+    this.lastName,
+    this.gender,
+  });
 
   @override
   State<GoalScreen> createState() => _GoalScreenState();
@@ -101,10 +111,19 @@ class _GoalScreenState extends State<GoalScreen> {
                   return;
                 }
                 
+                final onboardingData = OnboardingData(
+                  firstName: widget.firstName,
+                  lastName: widget.lastName,
+                  gender: widget.gender,
+                  goal: selectedGoal,
+                );
+                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const AboutYouScreen(),
+                    builder: (context) => AboutYouScreen(
+                      onboardingData: onboardingData,
+                    ),
                   ),
                 );
               },

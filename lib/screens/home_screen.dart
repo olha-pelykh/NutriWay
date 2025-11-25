@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_wrapper.dart';
 import '/services/auth_service.dart';
+import '/services/user_data_service.dart';
+import '/models/daily_log.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,7 +16,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _authService = AuthService();
   int selectedBottomIndex = 0;
-  int selectedWaterCups = 1;
   int selectedDay = 21;
   int currentWeekStart = 20; // Початок поточного тижня
   String? expandedMeal; // null або 'Breakfast', 'Lunch', 'Dinner'
@@ -24,23 +25,44 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime calendarStartDate = DateTime(2025, 9, 21);
   int calendarSelectedDay = 21;
   DateTime _selectedDate = DateTime.now();
+  int selectedWaterCups = 1;
+  List<String> todayMeals = [];
+  bool isLoadingLog = false;
 
-  List<String> weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  List<String> weekDaysFull = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-  List<String> monthNames = [
-    'January',
-    'February',
-    'March',
-    'April',
-    'May',
-    'June',
-    'July',
-    'August',
-    'September',
-    'October',
-    'November',
-    'December'
-  ];
+  List<String> weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLogForDate(_selectedDate);
+  }
+
+  Future<void> _loadLogForDate(DateTime date) async {
+    setState(() => isLoadingLog = true);
+    final userDataService = UserDataService();
+    final log = await userDataService.getDailyLog(date);
+    if (log != null) {
+      setState(() {
+        selectedWaterCups = ((log['waterMl'] ?? 0) / 250).round();
+        todayMeals = List<String>.from(log['meals'] ?? []);
+      });
+    } else {
+      setState(() {
+        selectedWaterCups = 0;
+        todayMeals = [];
+      });
+    }
+    setState(() => isLoadingLog = false);
+  }
+
+  Future<void> _saveLogForDate(DateTime date) async {
+    final userDataService = UserDataService();
+    await userDataService.saveDailyLog(
+      date: date,
+      waterMl: selectedWaterCups * 250,
+      meals: todayMeals,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -217,7 +239,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemBuilder: (context, index) {
                     bool isFilled = index < selectedWaterCups;
                     return InkWell(
-                      onTap: () {
+                      onTap: () async {
                         setState(() {
                           int newCount;
                           if (index == selectedWaterCups - 1) {
@@ -227,6 +249,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           }
                           selectedWaterCups = newCount;
                         });
+                        await _saveLogForDate(_selectedDate);
                       },
                       child: Icon(
                         isFilled ? Icons.local_drink : Icons.local_drink_outlined,
@@ -257,6 +280,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ],
                 ),
+                if (isLoadingLog)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 8.0),
+                    child: CircularProgressIndicator(),
+                  ),
               ],
             ),
           ),
@@ -316,40 +344,42 @@ class _HomeScreenState extends State<HomeScreen> {
             final date = startOfWeek.add(Duration(days: index));
             final isSelected = date.day == _selectedDate.day && date.month == _selectedDate.month && date.year == _selectedDate.year;
             return GestureDetector(
-              onTap: () {
+              onTap: () async {
                 setState(() {
                   _selectedDate = date;
                 });
+                await _loadLogForDate(date);
               },
-              child: Column(
-                children: [
-                  Text(
-                    DateFormat('E').format(date).substring(0, 1),
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                      color: isSelected ? Colors.black : Colors.black.withOpacity(0.5),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 38,
-                    height: 38,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: isSelected ? Colors.grey[300] : Colors.transparent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      date.day.toString(),
+              child: Container(
+                width: 40,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: isSelected ? Colors.blue[100] : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: isSelected ? Border.all(color: Colors.blue, width: 2) : null,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      weekDays[index],
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 22,
-                        color: isSelected ? Colors.black : Colors.black.withOpacity(0.7),
+                        fontSize: 14,
+                        color: isSelected ? Colors.blue : Colors.black,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      date.day.toString(),
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: isSelected ? Colors.blue : Colors.black,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           }),

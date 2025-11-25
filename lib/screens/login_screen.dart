@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'forgot_password_screen.dart';
 import '/services/auth_service.dart';
 
@@ -20,6 +20,32 @@ class _LoginScreenState extends State<LoginScreen> {
   bool rememberMe = false;
   bool _isLoading = false;
   bool _obscurePassword = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedCredentials();
+  }
+
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedRememberMe = prefs.getBool('remember_me') ?? false;
+      
+      if (savedRememberMe) {
+        final savedEmail = prefs.getString('saved_email') ?? '';
+        final savedPassword = prefs.getString('saved_password') ?? '';
+        
+        setState(() {
+          rememberMe = true;
+          _emailController.text = savedEmail;
+          _passwordController.text = savedPassword;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading saved credentials: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -53,13 +79,21 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Navigate to home screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const HomeScreen(),
-        ),
-      );
+      // Save credentials if Remember Me is checked
+      final prefs = await SharedPreferences.getInstance();
+      if (rememberMe) {
+        await prefs.setBool('remember_me', true);
+        await prefs.setString('saved_email', _emailController.text.trim());
+        await prefs.setString('saved_password', _passwordController.text.trim());
+      } else {
+        await prefs.remove('remember_me');
+        await prefs.remove('saved_email');
+        await prefs.remove('saved_password');
+      }
+
+      // Navigate back to trigger AuthWrapper to handle navigation
+      if (!mounted) return;
+      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
     } catch (e) {
       if (!mounted) return;
       _showSnackBar(e.toString(), Colors.red);

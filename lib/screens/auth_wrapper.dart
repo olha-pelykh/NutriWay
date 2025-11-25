@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'register_screen.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
-import 'onboarding/goal_screen.dart';
+import 'onboarding/personal_info_screen.dart';
 import '/services/auth_service.dart';
 
 class AuthWrapper extends StatefulWidget {
@@ -22,11 +22,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
     setState(() {
       showLogin = !showLogin;
     });
-  }
-
-  Future<bool> _hasCompletedOnboarding() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('onboarding_completed') ?? false;
   }
 
   @override
@@ -49,24 +44,10 @@ class _AuthWrapperState extends State<AuthWrapper> {
           
           // Check if email is verified
           if (user.emailVerified) {
-            // Check if user has completed onboarding
-            return FutureBuilder<bool>(
-              future: _hasCompletedOnboarding(),
-              builder: (context, onboardingSnapshot) {
-                if (onboardingSnapshot.connectionState == ConnectionState.waiting) {
-                  return const Scaffold(
-                    body: Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                  );
-                }
-                
-                final hasCompleted = onboardingSnapshot.data ?? false;
-                return hasCompleted ? const HomeScreen() : const GoalScreen();
-              },
-            );
+            // Always go to HomeScreen for verified users (login)
+            return const HomeScreen();
           } else {
-            // Show email verification screen
+            // Show email verification screen (new registrations)
             return EmailVerificationScreen(user: user);
           }
         }
@@ -104,9 +85,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     if (isVerified) {
       if (!mounted) return;
       
-      // Email verified! Navigate to AuthWrapper to trigger proper navigation
+      // Email verified! Navigate to onboarding (personal info screen)
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (context) => const AuthWrapper()),
+        MaterialPageRoute(
+          builder: (context) => const PersonalInfoScreen(),
+        ),
         (route) => false,
       );
     } else {
