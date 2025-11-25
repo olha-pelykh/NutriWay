@@ -38,7 +38,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
+  intl: ^0.18.1
+  
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
@@ -51,10 +52,16 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
-  # The following line ensures that the Material Icons font is
-  # included with your application, so that you can use the icons in
-  # the material Icons class.
+  fonts:
+    - family: Josefin Sans
+      fonts:
+        - asset: assets/fonts/JosefinSans-Regular.ttf
+        - asset: assets/fonts/JosefinSans-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/JosefinSans-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/JosefinSans-Light.ttf
+          weight: 300
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
