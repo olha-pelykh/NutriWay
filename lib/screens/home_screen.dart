@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_wrapper.dart';
+import '/services/auth_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,6 +12,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final _authService = AuthService();
   int selectedBottomIndex = 0;
   int selectedWaterCups = 1;
   int selectedDay = 21;
@@ -129,7 +132,13 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           child: IconButton(
             icon: const Icon(Icons.logout, color: Colors.black, size: 24),
-            onPressed: () {
+            onPressed: () async {
+              // Clear onboarding flag when user signs out
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('onboarding_completed');
+              
+              await _authService.signOut();
+              if (!mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
                 MaterialPageRoute(builder: (context) => const AuthWrapper()),
                 (route) => false,

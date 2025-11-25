@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../home_screen.dart';
 
 class MealPreferencesScreen extends StatefulWidget {
@@ -109,7 +110,12 @@ class _MealPreferencesScreenState extends State<MealPreferencesScreen> {
             ),
             const Spacer(),
             GestureDetector(
-              onTap: () {
+              onTap: () async {
+                // Mark onboarding as completed
+                final prefs = await SharedPreferences.getInstance();
+                await prefs.setBool('onboarding_completed', true);
+                
+                if (!mounted) return;
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(

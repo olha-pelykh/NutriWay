@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "497990093504",
+    "project_id": "nutriway-da2f8",
+    "storage_bucket": "nutriway-da2f8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:497990093504:android:28a68a55a703e60082fb25",
+        "android_client_info": {
+          "package_name": "com.example.nutriway"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBkpp2c7LaALM014Uhu0JNc9ZUBCsOxXAk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

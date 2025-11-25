@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'about_you_screen.dart';
+import '../auth_wrapper.dart';
 
 class GoalScreen extends StatefulWidget {
   const GoalScreen({super.key});
@@ -11,16 +13,33 @@ class GoalScreen extends StatefulWidget {
 class _GoalScreenState extends State<GoalScreen> {
   String? selectedGoal;
 
+  Future<void> _handleBack() async {
+    // Clear onboarding flag and return to auth
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('onboarding_completed');
+    
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const AuthWrapper()),
+      (route) => false,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+    return WillPopScope(
+      onWillPop: () async {
+        await _handleBack();
+        return false;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: _handleBack,
+          ),
         title: const Text(
           'Your Goal',
           style: TextStyle(
@@ -111,6 +130,7 @@ class _GoalScreenState extends State<GoalScreen> {
             ),
           ],
         ),
+      ),
       ),
     );
   }
