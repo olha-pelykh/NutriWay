@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../home_screen.dart';
 import '/models/onboarding_data.dart';
 import '/services/user_data_service.dart';
@@ -163,11 +162,11 @@ class _MealPreferencesScreenState extends State<MealPreferencesScreen> {
                     allergies: widget.onboardingData.allergies!,
                     mealTypes: widget.onboardingData.mealTypes!,
                     snacksCount: widget.onboardingData.snacksCount!,
+                    calories: widget.onboardingData.calories!,
+                    protein: widget.onboardingData.protein!,
+                    fats: widget.onboardingData.fats!,
+                    carbs: widget.onboardingData.carbs!,
                   );
-                  
-                  // Mark onboarding as completed
-                  final prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('onboarding_completed', true);
                   
                   if (!mounted) return;
                   

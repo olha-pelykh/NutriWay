@@ -1,0 +1,108 @@
+{
+  "recipes": [
+    {
+      "name": "Chicken Salad",
+      "ingredientsList": [
+        {
+          "name": "Chicken breast",
+          "amount": "200",
+          "unit": "g"
+        },
+        {
+          "name": "Lettuce",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Tomatoes",
+          "amount": "2",
+          "unit": "pcs"
+        },
+        {
+          "name": "Olive oil",
+          "amount": "20",
+          "unit": "ml"
+        }
+      ],
+      "instructions": "1. Grill the chicken breast until fully cooked.\n2. Chop the lettuce and tomatoes.\n3. Mix everything together.\n4. Drizzle with olive oil and season to taste.",
+      "calories": "350",
+      "time": "25",
+      "protein": "45",
+      "fat": "12",
+      "carb": "8",
+      "tags": ["healthy", "high-protein", "quick"],
+      "imageUrl": "https://example.com/chicken-salad.jpg"
+    },
+    {
+      "name": "Oatmeal with Berries",
+      "ingredientsList": [
+        {
+          "name": "Oats",
+          "amount": "50",
+          "unit": "g"
+        },
+        {
+          "name": "Milk",
+          "amount": "200",
+          "unit": "ml"
+        },
+        {
+          "name": "Mixed berries",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Honey",
+          "amount": "1",
+          "unit": "pcs"
+        }
+      ],
+      "instructions": "1. Cook oats with milk on medium heat for 5 minutes.\n2. Add berries on top.\n3. Drizzle with honey.\n4. Enjoy your breakfast!",
+      "calories": "280",
+      "time": "10",
+      "protein": "10",
+      "fat": "5",
+      "carb": "45",
+      "tags": ["breakfast", "vegetarian", "quick"],
+      "imageUrl": "https://example.com/oatmeal.jpg"
+    },
+    {
+      "name": "Vegetable Stir Fry",
+      "ingredientsList": [
+        {
+          "name": "Broccoli",
+          "amount": "150",
+          "unit": "g"
+        },
+        {
+          "name": "Carrots",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Bell peppers",
+          "amount": "2",
+          "unit": "pcs"
+        },
+        {
+          "name": "Soy sauce",
+          "amount": "30",
+          "unit": "ml"
+        },
+        {
+          "name": "Garlic",
+          "amount": "3",
+          "unit": "pcs"
+        }
+      ],
+      "instructions": "1. Heat oil in a wok or large pan.\n2. Add minced garlic and cook for 30 seconds.\n3. Add all vegetables and stir fry for 5-7 minutes.\n4. Add soy sauce and cook for another 2 minutes.\n5. Serve hot with rice if desired.",
+      "calories": "180",
+      "time": "15",
+      "protein": "8",
+      "fat": "6",
+      "carb": "25",
+      "tags": ["vegan", "healthy", "quick", "low-calorie"],
+      "imageUrl": "https://example.com/stir-fry.jpg"
+    }
+  ]
+}

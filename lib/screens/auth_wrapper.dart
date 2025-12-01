@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'register_screen.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
@@ -38,21 +37,16 @@ class _AuthWrapperState extends State<AuthWrapper> {
           );
         }
 
-        // User is signed in
         if (snapshot.hasData && snapshot.data != null) {
           final user = snapshot.data!;
           
-          // Check if email is verified
           if (user.emailVerified) {
-            // Always go to HomeScreen for verified users (login)
             return const HomeScreen();
           } else {
-            // Show email verification screen (new registrations)
             return EmailVerificationScreen(user: user);
           }
         }
 
-        // User is not signed in - show login or register
         return showLogin 
             ? LoginScreen(onToggle: toggleScreen)
             : RegisterScreen(onToggle: toggleScreen);
@@ -77,15 +71,12 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Future<void> _checkEmailVerified() async {
     await _authService.reloadUser();
     
-    // Check again after reload
     final currentUser = _authService.currentUser;
     await currentUser?.reload();
     final isVerified = currentUser?.emailVerified ?? false;
     
     if (isVerified) {
       if (!mounted) return;
-      
-      // Email verified! Navigate to onboarding (personal info screen)
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(
           builder: (context) => const PersonalInfoScreen(),
@@ -266,10 +257,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     try {
                       // Delete the unverified account
                       await _authService.deleteAccount();
-                      
-                      // Clear onboarding flag
-                      final prefs = await SharedPreferences.getInstance();
-                      await prefs.remove('onboarding_completed');
                       
                       if (!mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(

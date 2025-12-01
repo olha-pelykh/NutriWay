@@ -22,6 +22,10 @@ class UserDataService {
     required List<String> allergies,
     required List<String> mealTypes,
     required int snacksCount,
+    required int calories,
+    required int protein,
+    required int fats,
+    required int carbs,
   }) async {
     if (currentUserId == null) {
       throw Exception('User not authenticated');
@@ -44,6 +48,10 @@ class UserDataService {
         'allergies': allergies,
         'mealTypes': mealTypes,
         'snacksCount': snacksCount,
+        'calories': calories,
+        'protein': protein,
+        'fats': fats,
+        'carbs': carbs,
         'email': _auth.currentUser?.email,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -118,10 +126,10 @@ class UserDataService {
   Future<void> saveDailyLog({
     required DateTime date,
     int waterMl = 0,
-    List<String>? breakfast,
-    List<String>? lunch,
-    List<String>? dinner,
-    List<String>? snacks,
+    List<Map<String, dynamic>>? breakfast,
+    List<Map<String, dynamic>>? lunch,
+    List<Map<String, dynamic>>? dinner,
+    List<Map<String, dynamic>>? snacks,
   }) async {
     if (currentUserId == null) throw Exception('User not authenticated');
     final logId = date.toIso8601String().substring(0, 10); // YYYY-MM-DD

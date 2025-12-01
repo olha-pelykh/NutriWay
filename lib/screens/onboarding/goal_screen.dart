@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'about_you_screen.dart';
 import '../auth_wrapper.dart';
 import '/models/onboarding_data.dart';
@@ -23,12 +22,7 @@ class GoalScreen extends StatefulWidget {
 class _GoalScreenState extends State<GoalScreen> {
   String? selectedGoal;
 
-  Future<void> _handleBack() async {
-    // Clear onboarding flag and return to auth
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('onboarding_completed');
-    
-    if (!mounted) return;
+  void _handleBack() {
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const AuthWrapper()),
       (route) => false,
@@ -39,7 +33,7 @@ class _GoalScreenState extends State<GoalScreen> {
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async {
-        await _handleBack();
+        _handleBack();
         return false;
       },
       child: Scaffold(

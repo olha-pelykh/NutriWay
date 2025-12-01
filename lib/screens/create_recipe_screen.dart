@@ -1,151 +1,515 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:io';
-import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 
 class CreateRecipeScreen extends StatefulWidget {
-  const CreateRecipeScreen({super.key});
+  final String? recipeId;
+  final Map<String, dynamic>? recipeData;
+  
+  const CreateRecipeScreen({super.key, this.recipeId, this.recipeData});
 
   @override
   State<CreateRecipeScreen> createState() => _CreateRecipeScreenState();
 }
 
 class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
-    XFile? _pickedImage;
-    String? _uploadedImageUrl;
-    Future<void> _pickImage() async {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(source: ImageSource.gallery);
-      if (image != null) {
-        setState(() {
-          _pickedImage = image;
-        });
-        await _uploadImage(image);
-      }
-    }
-
-    Future<void> _uploadImage(XFile image) async {
-    try {
-      final storageRef = FirebaseStorage.instance.ref().child('recipe_images/${DateTime.now().millisecondsSinceEpoch}_${image.name}');
-      await storageRef.putData(await image.readAsBytes());
-      final url = await storageRef.getDownloadURL();
-      setState(() {
-        _uploadedImageUrl = url;
-        imageUrlController.text = url;
-      });
-    } catch (e) {
-      setState(() {
-        _uploadedImageUrl = '';
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Image upload failed: $e')),
-        );
-      }
-    }
-    }
   final nameController = TextEditingController();
-  final ingredientsController = TextEditingController();
+  final instructionsController = TextEditingController();
   final caloriesController = TextEditingController();
   final timeController = TextEditingController();
+  final proteinController = TextEditingController();
+  final fatController = TextEditingController();
+  final carbController = TextEditingController();
   final tagController = TextEditingController();
   final imageUrlController = TextEditingController();
-
+  
+  // Ingredient fields
+  final ingredientNameController = TextEditingController();
+  final ingredientAmountController = TextEditingController();
+  String selectedUnit = 'g';
+  List<Map<String, String>> ingredients = [];
+  
+  List<String> tags = [];
   bool isLoading = false;
+  
+  @override
+  void initState() {
+    super.initState();
+    if (widget.recipeData != null) {
+      _loadRecipeData();
+    }
+  }
+  
+  void _loadRecipeData() {
+    final data = widget.recipeData!;
+    nameController.text = data['name'] ?? '';
+    instructionsController.text = data['instructions'] ?? '';
+    caloriesController.text = data['calories']?.toString() ?? '';
+    timeController.text = data['time']?.toString() ?? '';
+    proteinController.text = data['protein']?.toString() ?? '';
+    fatController.text = data['fat']?.toString() ?? '';
+    carbController.text = data['carb']?.toString() ?? '';
+    imageUrlController.text = data['imageUrl'] ?? '';
+    
+    // Load ingredients
+    if (data['ingredientsList'] != null) {
+      final ingredientsList = data['ingredientsList'] as List<dynamic>;
+      ingredients = ingredientsList.map((ing) => {
+        'name': ing['name']?.toString() ?? '',
+        'amount': ing['amount']?.toString() ?? '',
+        'unit': ing['unit']?.toString() ?? 'g',
+      }).toList();
+    }
+    
+    // Load tags
+    if (data['tags'] != null) {
+      tags = List<String>.from(data['tags']);
+    }
+  }
+
+  void _addIngredient() {
+    if (ingredientNameController.text.trim().isNotEmpty && 
+        ingredientAmountController.text.trim().isNotEmpty) {
+      setState(() {
+        ingredients.add({
+          'name': ingredientNameController.text.trim(),
+          'amount': ingredientAmountController.text.trim(),
+          'unit': selectedUnit,
+        });
+        ingredientNameController.clear();
+        ingredientAmountController.clear();
+      });
+    }
+  }
+
+  void _removeIngredient(int index) {
+    setState(() {
+      ingredients.removeAt(index);
+    });
+  }
+
+  void _addTag() {
+    if (tagController.text.trim().isNotEmpty) {
+      setState(() {
+        tags.add(tagController.text.trim());
+        tagController.clear();
+      });
+    }
+  }
+
+  void _removeTag(int index) {
+    setState(() {
+      tags.removeAt(index);
+    });
+  }
 
   Future<void> _saveRecipe() async {
     setState(() => isLoading = true);
-    // Wait for image upload if needed
-    String? imageUrl = _uploadedImageUrl;
-    if (_pickedImage != null && _uploadedImageUrl == null) {
-      await _uploadImage(_pickedImage!);
-      imageUrl = _uploadedImageUrl;
-    }
-    await FirebaseFirestore.instance.collection('recipes').add({
+    
+    final recipeData = {
       'name': nameController.text,
-      'ingredients': ingredientsController.text,
+      'ingredientsList': ingredients,
+      'instructions': instructionsController.text,
       'calories': caloriesController.text,
       'time': timeController.text,
-      'tag': tagController.text,
-      'imageUrl': imageUrl ?? imageUrlController.text,
-    });
+      'protein': proteinController.text,
+      'fat': fatController.text,
+      'carb': carbController.text,
+      'tags': tags,
+      'tag': tags.isNotEmpty ? tags.first : '', // Keep for backward compatibility
+      'imageUrl': imageUrlController.text,
+    };
+    
+    if (widget.recipeId != null) {
+      // Update existing recipe
+      await FirebaseFirestore.instance
+          .collection('recipes')
+          .doc(widget.recipeId)
+          .update(recipeData);
+    } else {
+      // Create new recipe
+      await FirebaseFirestore.instance.collection('recipes').add(recipeData);
+    }
+    
     setState(() => isLoading = false);
-    if (mounted) Navigator.of(context).pop();
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.recipeId != null;
+    
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Recipe')),
+      appBar: AppBar(
+        title: Text(
+          isEditing ? 'Edit Recipe' : 'Create Recipe',
+          style: const TextStyle(fontFamily: 'Josefin Sans'),
+        ),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
             TextField(
               controller: nameController,
-              decoration: const InputDecoration(labelText: 'Recipe Name'),
+              style: const TextStyle(fontFamily: 'Josefin Sans'),
+              decoration: InputDecoration(
+                labelText: 'Recipe Name',
+                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                filled: true,
+                fillColor: const Color(0xFFE8E8E8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
+            const SizedBox(height: 16),
+            
+            // Ingredients Section
+            const Text(
+              'Ingredients',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Josefin Sans',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: TextField(
+                    controller: ingredientNameController,
+                    style: const TextStyle(fontFamily: 'Josefin Sans'),
+                    decoration: InputDecoration(
+                      labelText: 'Ingredient',
+                      labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                      filled: true,
+                      fillColor: const Color(0xFFE8E8E8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: TextField(
+                    controller: ingredientAmountController,
+                    style: const TextStyle(fontFamily: 'Josefin Sans'),
+                    decoration: InputDecoration(
+                      labelText: 'Amount',
+                      labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                      filled: true,
+                      fillColor: const Color(0xFFE8E8E8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8E8E8),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButton<String>(
+                    value: selectedUnit,
+                    underline: const SizedBox(),
+                    style: const TextStyle(
+                      fontFamily: 'Josefin Sans',
+                      color: Colors.black,
+                    ),
+                    items: ['g', 'kg', 'l', 'ml', 'pcs']
+                        .map((unit) => DropdownMenuItem(
+                              value: unit,
+                              child: Text(unit),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      if (value != null) {
+                        setState(() {
+                          selectedUnit = value;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _addIngredient,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Add',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Josefin Sans',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            if (ingredients.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFEAEAEA)),
+                ),
+                child: Column(
+                  children: ingredients.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final ingredient = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              ingredient['name']!,
+                              style: const TextStyle(
+                                fontFamily: 'Josefin Sans',
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            '${ingredient['amount']} ${ingredient['unit']}',
+                            style: TextStyle(
+                              fontFamily: 'Josefin Sans',
+                              fontSize: 14,
+                              color: Colors.grey[700],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () => _removeIngredient(index),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            
             TextField(
-              controller: ingredientsController,
-              decoration: const InputDecoration(labelText: 'Ingredients'),
-              maxLines: 2,
+              controller: instructionsController,
+              style: const TextStyle(fontFamily: 'Josefin Sans'),
+              decoration: InputDecoration(
+                labelText: 'Instructions',
+                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                filled: true,
+                fillColor: const Color(0xFFE8E8E8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              maxLines: 5,
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: caloriesController,
-              decoration: const InputDecoration(labelText: 'Calories'),
+              style: const TextStyle(fontFamily: 'Josefin Sans'),
+              decoration: InputDecoration(
+                labelText: 'Calories',
+                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                filled: true,
+                fillColor: const Color(0xFFE8E8E8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
               keyboardType: TextInputType.number,
             ),
+            const SizedBox(height: 16),
             TextField(
               controller: timeController,
-              decoration: const InputDecoration(labelText: 'Time (min)'),
+              style: const TextStyle(fontFamily: 'Josefin Sans'),
+              decoration: InputDecoration(
+                labelText: 'Time (min)',
+                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                filled: true,
+                fillColor: const Color(0xFFE8E8E8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
               keyboardType: TextInputType.number,
             ),
+            const SizedBox(height: 16),
             TextField(
-              controller: tagController,
-              decoration: const InputDecoration(labelText: 'Tag (e.g. vegan)'),
+              controller: proteinController,
+              style: const TextStyle(fontFamily: 'Josefin Sans'),
+              decoration: InputDecoration(
+                labelText: 'Protein (g)',
+                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                filled: true,
+                fillColor: const Color(0xFFE8E8E8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: fatController,
+              style: const TextStyle(fontFamily: 'Josefin Sans'),
+              decoration: InputDecoration(
+                labelText: 'Fat (g)',
+                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                filled: true,
+                fillColor: const Color(0xFFE8E8E8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              keyboardType: TextInputType.number,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: carbController,
+              style: const TextStyle(fontFamily: 'Josefin Sans'),
+              decoration: InputDecoration(
+                labelText: 'Carbs (g)',
+                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                filled: true,
+                fillColor: const Color(0xFFE8E8E8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
             Row(
               children: [
-                _pickedImage != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          // ignore: prefer_const_constructors
-                          File(_pickedImage!.path),
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Container(
-                        width: 80,
-                        height: 80,
-                        color: Colors.grey[300],
-                        child: const Icon(Icons.image, size: 40),
+                Expanded(
+                  child: TextField(
+                    controller: tagController,
+                    style: const TextStyle(fontFamily: 'Josefin Sans'),
+                    decoration: InputDecoration(
+                      labelText: 'Tag (e.g. vegan)',
+                      labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                      filled: true,
+                      fillColor: const Color(0xFFE8E8E8),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
                       ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.upload),
-                  label: const Text('Upload Photo'),
-                  onPressed: _pickImage,
+                    ),
+                    onSubmitted: (_) => _addTag(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                ElevatedButton(
+                  onPressed: _addTag,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Add',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontFamily: 'Josefin Sans',
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                 ),
               ],
             ),
+            if (tags.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: tags.asMap().entries.map((entry) {
+                  return Chip(
+                    label: Text(
+                      entry.value,
+                      style: const TextStyle(
+                        fontFamily: 'Josefin Sans',
+                        color: Colors.white,
+                      ),
+                    ),
+                    backgroundColor: Colors.black,
+                    deleteIcon: const Icon(Icons.close, color: Colors.white, size: 18),
+                    onDeleted: () => _removeTag(entry.key),
+                  );
+                }).toList(),
+              ),
+            ],
             const SizedBox(height: 16),
             TextField(
               controller: imageUrlController,
-              decoration: const InputDecoration(labelText: 'Image URL (optional)'),
+              style: const TextStyle(fontFamily: 'Josefin Sans'),
+              decoration: InputDecoration(
+                labelText: 'Image URL',
+                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
+                filled: true,
+                fillColor: const Color(0xFFE8E8E8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+              ),
             ),
             const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: isLoading || (_pickedImage != null && _uploadedImageUrl == null) ? null : _saveRecipe,
-              child: isLoading
-                  ? const CircularProgressIndicator()
-                  : (_pickedImage != null && _uploadedImageUrl == null)
-                      ? const Text('Uploading image...')
-                      : const Text('Save Recipe'),
+            SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: ElevatedButton(
+                onPressed: isLoading ? null : _saveRecipe,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.black,
+                  disabledBackgroundColor: Colors.grey[400],
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(28),
+                  ),
+                ),
+                child: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        isEditing ? 'Update Recipe' : 'Save Recipe',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontFamily: 'Josefin Sans',
+                          fontWeight: FontWeight.w600,
+                          fontSize: 18,
+                        ),
+                      ),
+              ),
             ),
           ],
         ),

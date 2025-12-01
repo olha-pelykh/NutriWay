@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'account_settings_screen.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'add_meal_dialog.dart';
 import 'create_recipe_screen.dart';
 import 'recipes_screen.dart';
@@ -20,22 +19,24 @@ class _HomeScreenState extends State<HomeScreen> {
     String protein = '';
     String fats = '';
     String carbs = '';
+    String calories = '';
+    String firstName = '';
+    String lastName = '';
   final _authService = AuthService();
   int selectedBottomIndex = 0;
   int selectedDay = 21;
-  int currentWeekStart = 20; // Початок поточного тижня
-  String? expandedMeal; // null або 'Breakfast', 'Lunch', 'Dinner'
-  Set<String> checkedMeals = {}; // Відзначені страви
+  int currentWeekStart = 20; 
+  String? expandedMeal; 
+  Set<String> checkedMeals = {}; 
 
-  // Додаю змінні для календаря
   DateTime calendarStartDate = DateTime(2025, 9, 21);
   int calendarSelectedDay = 21;
   DateTime _selectedDate = DateTime.now();
   int selectedWaterCups = 1;
-  List<String> breakfast = [];
-  List<String> lunch = [];
-  List<String> dinner = [];
-  List<String> snacks = [];
+  List<Map<String, dynamic>> breakfast = [];
+  List<Map<String, dynamic>> lunch = [];
+  List<Map<String, dynamic>> dinner = [];
+  List<Map<String, dynamic>> snacks = [];
   bool isLoadingLog = false;
 
   List<String> weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -54,10 +55,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (log != null) {
       setState(() {
         selectedWaterCups = ((log['waterMl'] ?? 0) / 250).round();
-        breakfast = List<String>.from(log['breakfast'] ?? []);
-        lunch = List<String>.from(log['lunch'] ?? []);
-        dinner = List<String>.from(log['dinner'] ?? []);
-        snacks = List<String>.from(log['snacks'] ?? []);
+        breakfast = List<Map<String, dynamic>>.from((log['breakfast'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
+        lunch = List<Map<String, dynamic>>.from((log['lunch'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
+        dinner = List<Map<String, dynamic>>.from((log['dinner'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
+        snacks = List<Map<String, dynamic>>.from((log['snacks'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
       });
     } else {
       setState(() {
@@ -80,6 +81,9 @@ class _HomeScreenState extends State<HomeScreen> {
         protein = data['protein']?.toString() ?? '';
         fats = data['fats']?.toString() ?? '';
         carbs = data['carbs']?.toString() ?? '';
+        calories = data['calories']?.toString() ?? '';
+        firstName = data['firstName']?.toString() ?? '';
+        lastName = data['lastName']?.toString() ?? '';
       });
     }
   }
@@ -136,6 +140,13 @@ class _HomeScreenState extends State<HomeScreen> {
                   dinner,
                   (meal) => _addMealDialog('Dinner'),
                 ),
+                const SizedBox(height: 12),
+                _buildMealCard(
+                  'Snacks',
+                  '150/200 kcal',
+                  snacks,
+                  (meal) => _addMealDialog('Snacks'),
+                ),
                 const SizedBox(height: 100),
               ],
             ),
@@ -169,21 +180,23 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(width: 12),
-        const Expanded(
+        Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
+              const Text(
                 'Have a nice day!',
                 style: TextStyle(
                   fontSize: 14,
                   color: Color(0xFF666666),
                 ),
               ),
-              SizedBox(height: 4),
+              const SizedBox(height: 4),
               Text(
-                'Olya Pelykh',
-                style: TextStyle(
+                firstName.isNotEmpty && lastName.isNotEmpty
+                    ? '$firstName $lastName'
+                    : 'User',
+                style: const TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
                   color: Colors.black,
@@ -202,10 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
           child: IconButton(
             icon: const Icon(Icons.logout, color: Colors.black, size: 24),
             onPressed: () async {
-              // Clear onboarding flag when user signs out
-              final prefs = await SharedPreferences.getInstance();
-              await prefs.remove('onboarding_completed');
-              
               await _authService.signOut();
               if (!mounted) return;
               Navigator.of(context).pushAndRemoveUntil(
@@ -220,6 +229,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildMacrosCard() {
+    // Calculate totals from all meals
+    final allMeals = [...breakfast, ...lunch, ...dinner, ...snacks];
+    final totalCalories = allMeals.fold<double>(0, (sum, meal) => 
+      sum + (double.tryParse(meal['calories']?.toString() ?? '0') ?? 0));
+    final totalProtein = allMeals.fold<double>(0, (sum, meal) => 
+      sum + (double.tryParse(meal['protein']?.toString() ?? '0') ?? 0));
+    final totalFat = allMeals.fold<double>(0, (sum, meal) => 
+      sum + (double.tryParse(meal['fat']?.toString() ?? '0') ?? 0));
+    final totalCarb = allMeals.fold<double>(0, (sum, meal) => 
+      sum + (double.tryParse(meal['carb']?.toString() ?? '0') ?? 0));
+    
+    // Target values from user profile
+    final targetProtein = double.tryParse(protein) ?? 0;
+    final targetFat = double.tryParse(fats) ?? 0;
+    final targetCarb = double.tryParse(carbs) ?? 0;
+    final targetCalories = double.tryParse(calories) ?? 0;
+    
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -228,35 +254,82 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       child: Column(
         children: [
-          _buildMacroRow('Protein', protein),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Today\'s Nutrition',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  fontFamily: 'Josefin Sans',
+                ),
+              ),
+              Text(
+                '${totalCalories.toStringAsFixed(0)}/${targetCalories.toStringAsFixed(0)} kcal',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                  fontFamily: 'Josefin Sans',
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _buildMacroRow(
+            'Protein', 
+            '${totalProtein.toStringAsFixed(1)}g', 
+            '${targetProtein.toStringAsFixed(0)}g',
+            totalProtein / (targetProtein > 0 ? targetProtein : 1),
+          ),
           const SizedBox(height: 16),
-          _buildMacroRow('Fats', fats),
+          _buildMacroRow(
+            'Fat', 
+            '${totalFat.toStringAsFixed(1)}g', 
+            '${targetFat.toStringAsFixed(0)}g',
+            totalFat / (targetFat > 0 ? targetFat : 1),
+          ),
           const SizedBox(height: 16),
-          _buildMacroRow('Carbohydrates', carbs),
+          _buildMacroRow(
+            'Carbs', 
+            '${totalCarb.toStringAsFixed(1)}g', 
+            '${targetCarb.toStringAsFixed(0)}g',
+            totalCarb / (targetCarb > 0 ? targetCarb : 1),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMacroRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _buildMacroRow(String label, String current, String target, double progress) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 18,
-            color: Colors.black,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 16,
+                color: Colors.black,
+                fontFamily: 'Josefin Sans',
+              ),
+            ),
+            Text(
+              '$current / $target',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+                fontFamily: 'Josefin Sans',
+              ),
+            ),
+          ],
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: Colors.black,
-          ),
-        ),
+
       ],
     );
   }
@@ -435,8 +508,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildMealCard(String title, String calories, List<String> items, Function(String) onAddMeal) {
+  Widget _buildMealCard(String title, String calories, List<Map<String, dynamic>> items, Function(String) onAddMeal) {
     final isExpanded = expandedMeal == title;
+    final totalCals = items.fold<double>(0, (sum, item) => sum + (double.tryParse(item['calories']?.toString() ?? '0') ?? 0));
+    
     return GestureDetector(
       onTap: () {
         setState(() {
@@ -460,6 +535,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
                     color: Colors.black,
+                    fontFamily: 'Josefin Sans',
                   ),
                 ),
                 Row(
@@ -471,11 +547,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      calories,
+                      '${totalCals.toStringAsFixed(0)} kcal',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500,
                         color: Colors.black,
+                        fontFamily: 'Josefin Sans',
                       ),
                     ),
                   ],
@@ -484,21 +561,105 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             if (isExpanded) ...[
               const SizedBox(height: 16),
-              ...items.map((meal) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(
-                  children: [
-                    const Icon(Icons.restaurant, size: 24, color: Colors.black),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        meal,
-                        style: const TextStyle(fontSize: 16, color: Colors.black),
-                      ),
+              ...items.asMap().entries.map((entry) {
+                final index = entry.key;
+                final meal = entry.value;
+                final imageUrl = meal['imageUrl'] as String?;
+                final hasImage = imageUrl != null && imageUrl.isNotEmpty && imageUrl.startsWith('http');
+                
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F5),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
-              )),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (hasImage) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              imageUrl,
+                              width: 60,
+                              height: 60,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 60,
+                                height: 60,
+                                color: Colors.grey[300],
+                                child: const Icon(Icons.broken_image, size: 30),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                        ],
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      meal['name'] ?? '',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.black,
+                                        fontFamily: 'Josefin Sans',
+                                      ),
+                                    ),
+                                  ),
+                                  Text(
+                                    '${meal['weight']}g',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey[600],
+                                      fontFamily: 'Josefin Sans',
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close, size: 20, color: Colors.red),
+                                    padding: EdgeInsets.zero,
+                                    constraints: const BoxConstraints(),
+                                    onPressed: () async {
+                                      setState(() {
+                                        items.removeAt(index);
+                                      });
+                                      final userDataService = UserDataService();
+                                      await userDataService.saveDailyLog(
+                                        date: _selectedDate,
+                                        waterMl: selectedWaterCups * 250,
+                                        breakfast: breakfast,
+                                        lunch: lunch,
+                                        dinner: dinner,
+                                        snacks: snacks,
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                children: [
+                                  _buildMacroInfo('Cal', meal['calories'] ?? '0'),
+                                  _buildMacroInfo('Protein', '${meal['protein'] ?? '0'}g'),
+                                  _buildMacroInfo('Fat', '${meal['fat'] ?? '0'}g'),
+                                  _buildMacroInfo('Carbs', '${meal['carb'] ?? '0'}g'),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
               const SizedBox(height: 8),
               GestureDetector(
                 onTap: () => onAddMeal(title),
@@ -525,10 +686,24 @@ class _HomeScreenState extends State<HomeScreen> {
         return AddMealDialog(
           mealType: mealType,
           onRecipeSelected: (recipe) async {
+            final weight = recipe['weight'] ?? 100.0;
+            final multiplier = weight / 100.0;
+            
+            final mealData = {
+              'name': recipe['name'],
+              'weight': weight,
+              'calories': ((double.tryParse(recipe['calories']?.toString() ?? '0') ?? 0) * multiplier).toStringAsFixed(0),
+              'protein': ((double.tryParse(recipe['protein']?.toString() ?? '0') ?? 0) * multiplier).toStringAsFixed(1),
+              'fat': ((double.tryParse(recipe['fat']?.toString() ?? '0') ?? 0) * multiplier).toStringAsFixed(1),
+              'carb': ((double.tryParse(recipe['carb']?.toString() ?? '0') ?? 0) * multiplier).toStringAsFixed(1),
+              'imageUrl': recipe['imageUrl'] ?? '',
+            };
+            
             setState(() {
-              if (mealType == 'Breakfast') breakfast.add(recipe['name']);
-              if (mealType == 'Lunch') lunch.add(recipe['name']);
-              if (mealType == 'Dinner') dinner.add(recipe['name']);
+              if (mealType == 'Breakfast') breakfast.add(mealData);
+              if (mealType == 'Lunch') lunch.add(mealData);
+              if (mealType == 'Dinner') dinner.add(mealData);
+              if (mealType == 'Snacks') snacks.add(mealData);
             });
             // Save to Firestore
             final userDataService = UserDataService();
@@ -548,6 +723,31 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildMacroInfo(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: Colors.grey[600],
+            fontFamily: 'Josefin Sans',
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+            fontFamily: 'Josefin Sans',
+          ),
+        ),
+      ],
     );
   }
 

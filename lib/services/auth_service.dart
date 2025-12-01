@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -100,6 +102,33 @@ class AuthService {
       throw _handleAuthException(e);
     } catch (e) {
       throw 'Failed to delete account';
+    }
+  }
+
+  // Create user profile with nutrition goals
+  Future<void> createUserProfile({
+    required int calories,
+    required int protein,
+    required int fats,
+    required int carbs,
+  }) async {
+    final userId = currentUser?.uid;
+    if (userId == null) {
+      throw 'User not authenticated';
+    }
+
+    try {
+      await _firestore.collection('users').doc(userId).set({
+        'email': currentUser?.email,
+        'calories': calories,
+        'protein': protein,
+        'fats': fats,
+        'carbs': carbs,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      throw 'Failed to create user profile: $e';
     }
   }
 

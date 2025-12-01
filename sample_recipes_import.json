@@ -1,0 +1,454 @@
+{
+  "recipes": [
+    {
+      "name": "Greek Yogurt Parfait",
+      "ingredientsList": [
+        {
+          "name": "Greek yogurt",
+          "amount": "200",
+          "unit": "g"
+        },
+        {
+          "name": "Granola",
+          "amount": "50",
+          "unit": "g"
+        },
+        {
+          "name": "Blueberries",
+          "amount": "80",
+          "unit": "g"
+        },
+        {
+          "name": "Honey",
+          "amount": "15",
+          "unit": "ml"
+        },
+        {
+          "name": "Almonds",
+          "amount": "20",
+          "unit": "g"
+        }
+      ],
+      "instructions": "1. Layer Greek yogurt in a glass or bowl.\n2. Add a layer of granola.\n3. Add fresh blueberries on top.\n4. Drizzle with honey.\n5. Sprinkle crushed almonds.\n6. Repeat layers if desired.\n7. Serve immediately or refrigerate.",
+      "calories": "380",
+      "time": "5",
+      "protein": "18",
+      "fat": "12",
+      "carb": "48",
+      "tags": ["breakfast", "healthy", "quick", "vegetarian"],
+      "imageUrl": "https://images.unsplash.com/photo-1488477181946-6428a0291777"
+    },
+    {
+      "name": "Quinoa Buddha Bowl",
+      "ingredientsList": [
+        {
+          "name": "Quinoa",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Chickpeas",
+          "amount": "150",
+          "unit": "g"
+        },
+        {
+          "name": "Avocado",
+          "amount": "1",
+          "unit": "pcs"
+        },
+        {
+          "name": "Cherry tomatoes",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Spinach",
+          "amount": "50",
+          "unit": "g"
+        },
+        {
+          "name": "Tahini",
+          "amount": "30",
+          "unit": "ml"
+        },
+        {
+          "name": "Lemon juice",
+          "amount": "20",
+          "unit": "ml"
+        }
+      ],
+      "instructions": "1. Cook quinoa according to package instructions.\n2. Roast chickpeas with olive oil and spices at 200°C for 20 minutes.\n3. Arrange cooked quinoa in a bowl.\n4. Add fresh spinach, sliced avocado, and halved cherry tomatoes.\n5. Top with roasted chickpeas.\n6. Mix tahini with lemon juice and drizzle over the bowl.\n7. Season with salt and pepper to taste.",
+      "calories": "520",
+      "time": "30",
+      "protein": "22",
+      "fat": "24",
+      "carb": "58",
+      "tags": ["vegan", "healthy", "lunch", "high-protein"],
+      "imageUrl": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd"
+    },
+    {
+      "name": "Salmon with Asparagus",
+      "ingredientsList": [
+        {
+          "name": "Salmon fillet",
+          "amount": "180",
+          "unit": "g"
+        },
+        {
+          "name": "Asparagus",
+          "amount": "200",
+          "unit": "g"
+        },
+        {
+          "name": "Olive oil",
+          "amount": "25",
+          "unit": "ml"
+        },
+        {
+          "name": "Garlic",
+          "amount": "2",
+          "unit": "pcs"
+        },
+        {
+          "name": "Lemon",
+          "amount": "1",
+          "unit": "pcs"
+        }
+      ],
+      "instructions": "1. Preheat oven to 200°C.\n2. Season salmon with salt, pepper, and lemon juice.\n3. Trim asparagus and toss with olive oil and minced garlic.\n4. Place salmon and asparagus on a baking sheet.\n5. Bake for 15-18 minutes until salmon is cooked through.\n6. Serve with lemon wedges.",
+      "calories": "420",
+      "time": "20",
+      "protein": "38",
+      "fat": "28",
+      "carb": "8",
+      "tags": ["dinner", "high-protein", "low-carb", "healthy"],
+      "imageUrl": "https://images.unsplash.com/photo-1485921325833-c519f76c4927"
+    },
+    {
+      "name": "Protein Smoothie Bowl",
+      "ingredientsList": [
+        {
+          "name": "Banana",
+          "amount": "2",
+          "unit": "pcs"
+        },
+        {
+          "name": "Protein powder",
+          "amount": "30",
+          "unit": "g"
+        },
+        {
+          "name": "Almond milk",
+          "amount": "150",
+          "unit": "ml"
+        },
+        {
+          "name": "Strawberries",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Chia seeds",
+          "amount": "15",
+          "unit": "g"
+        },
+        {
+          "name": "Coconut flakes",
+          "amount": "10",
+          "unit": "g"
+        }
+      ],
+      "instructions": "1. Freeze bananas overnight for best results.\n2. Blend frozen bananas with protein powder and almond milk until smooth.\n3. Pour into a bowl.\n4. Top with sliced strawberries, chia seeds, and coconut flakes.\n5. Add any additional toppings like granola or nuts.\n6. Serve immediately.",
+      "calories": "340",
+      "time": "8",
+      "protein": "28",
+      "fat": "10",
+      "carb": "42",
+      "tags": ["breakfast", "high-protein", "quick", "vegetarian"],
+      "imageUrl": "https://images.unsplash.com/photo-1590301157890-4810ed352733"
+    },
+    {
+      "name": "Chicken Fajita Bowl",
+      "ingredientsList": [
+        {
+          "name": "Chicken breast",
+          "amount": "200",
+          "unit": "g"
+        },
+        {
+          "name": "Bell peppers",
+          "amount": "2",
+          "unit": "pcs"
+        },
+        {
+          "name": "Onion",
+          "amount": "1",
+          "unit": "pcs"
+        },
+        {
+          "name": "Brown rice",
+          "amount": "80",
+          "unit": "g"
+        },
+        {
+          "name": "Black beans",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Fajita seasoning",
+          "amount": "10",
+          "unit": "g"
+        },
+        {
+          "name": "Lime",
+          "amount": "1",
+          "unit": "pcs"
+        }
+      ],
+      "instructions": "1. Cook brown rice according to package instructions.\n2. Slice chicken breast into strips and season with fajita seasoning.\n3. Cook chicken in a pan until fully cooked, about 6-8 minutes.\n4. Slice bell peppers and onion, then sauté until tender.\n5. Warm black beans.\n6. Assemble bowl with rice, chicken, peppers, onions, and beans.\n7. Squeeze lime juice over the top.\n8. Optional: add sour cream, guacamole, or salsa.",
+      "calories": "480",
+      "time": "25",
+      "protein": "42",
+      "fat": "8",
+      "carb": "58",
+      "tags": ["lunch", "dinner", "high-protein", "mexican"],
+      "imageUrl": "https://images.unsplash.com/photo-1604909052743-94e838986d24"
+    },
+    {
+      "name": "Vegetable Soup",
+      "ingredientsList": [
+        {
+          "name": "Carrots",
+          "amount": "150",
+          "unit": "g"
+        },
+        {
+          "name": "Celery",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Potatoes",
+          "amount": "200",
+          "unit": "g"
+        },
+        {
+          "name": "Onion",
+          "amount": "1",
+          "unit": "pcs"
+        },
+        {
+          "name": "Vegetable broth",
+          "amount": "1",
+          "unit": "l"
+        },
+        {
+          "name": "Tomatoes",
+          "amount": "2",
+          "unit": "pcs"
+        },
+        {
+          "name": "Green beans",
+          "amount": "100",
+          "unit": "g"
+        }
+      ],
+      "instructions": "1. Dice all vegetables into bite-sized pieces.\n2. Sauté onion in a large pot until translucent.\n3. Add carrots, celery, and potatoes, cook for 5 minutes.\n4. Pour in vegetable broth and bring to a boil.\n5. Add tomatoes and green beans.\n6. Simmer for 20-25 minutes until vegetables are tender.\n7. Season with herbs, salt, and pepper.\n8. Serve hot with crusty bread.",
+      "calories": "180",
+      "time": "35",
+      "protein": "6",
+      "fat": "2",
+      "carb": "38",
+      "tags": ["soup", "vegan", "low-calorie", "comfort-food"],
+      "imageUrl": "https://images.unsplash.com/photo-1547592166-23ac45744acd"
+    },
+    {
+      "name": "Tuna Poke Bowl",
+      "ingredientsList": [
+        {
+          "name": "Sushi-grade tuna",
+          "amount": "200",
+          "unit": "g"
+        },
+        {
+          "name": "Sushi rice",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Cucumber",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Edamame",
+          "amount": "80",
+          "unit": "g"
+        },
+        {
+          "name": "Avocado",
+          "amount": "1",
+          "unit": "pcs"
+        },
+        {
+          "name": "Soy sauce",
+          "amount": "30",
+          "unit": "ml"
+        },
+        {
+          "name": "Sesame oil",
+          "amount": "10",
+          "unit": "ml"
+        },
+        {
+          "name": "Sesame seeds",
+          "amount": "5",
+          "unit": "g"
+        }
+      ],
+      "instructions": "1. Cook sushi rice according to package instructions and let cool.\n2. Cube fresh tuna into bite-sized pieces.\n3. Marinate tuna in soy sauce and sesame oil for 10 minutes.\n4. Dice cucumber and slice avocado.\n5. Arrange rice in a bowl.\n6. Top with marinated tuna, cucumber, edamame, and avocado.\n7. Sprinkle with sesame seeds.\n8. Drizzle remaining marinade over the bowl.",
+      "calories": "450",
+      "time": "20",
+      "protein": "36",
+      "fat": "18",
+      "carb": "42",
+      "tags": ["lunch", "high-protein", "japanese", "healthy"],
+      "imageUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c"
+    },
+    {
+      "name": "Egg White Omelette",
+      "ingredientsList": [
+        {
+          "name": "Egg whites",
+          "amount": "200",
+          "unit": "ml"
+        },
+        {
+          "name": "Spinach",
+          "amount": "50",
+          "unit": "g"
+        },
+        {
+          "name": "Mushrooms",
+          "amount": "80",
+          "unit": "g"
+        },
+        {
+          "name": "Tomatoes",
+          "amount": "1",
+          "unit": "pcs"
+        },
+        {
+          "name": "Feta cheese",
+          "amount": "30",
+          "unit": "g"
+        }
+      ],
+      "instructions": "1. Sauté mushrooms and spinach in a non-stick pan.\n2. Remove vegetables and set aside.\n3. Pour egg whites into the same pan.\n4. Cook on medium heat until edges start to set.\n5. Add sautéed vegetables, diced tomatoes, and feta cheese to one half.\n6. Fold omelette in half and cook for another minute.\n7. Slide onto a plate and serve hot.",
+      "calories": "180",
+      "time": "10",
+      "protein": "28",
+      "fat": "6",
+      "carb": "8",
+      "tags": ["breakfast", "high-protein", "low-calorie", "vegetarian"],
+      "imageUrl": "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841"
+    },
+    {
+      "name": "Sweet Potato Curry",
+      "ingredientsList": [
+        {
+          "name": "Sweet potatoes",
+          "amount": "300",
+          "unit": "g"
+        },
+        {
+          "name": "Coconut milk",
+          "amount": "400",
+          "unit": "ml"
+        },
+        {
+          "name": "Curry paste",
+          "amount": "30",
+          "unit": "g"
+        },
+        {
+          "name": "Chickpeas",
+          "amount": "200",
+          "unit": "g"
+        },
+        {
+          "name": "Spinach",
+          "amount": "100",
+          "unit": "g"
+        },
+        {
+          "name": "Ginger",
+          "amount": "10",
+          "unit": "g"
+        },
+        {
+          "name": "Garlic",
+          "amount": "3",
+          "unit": "pcs"
+        }
+      ],
+      "instructions": "1. Cube sweet potatoes into 2cm pieces.\n2. Sauté minced garlic and ginger in a pot.\n3. Add curry paste and cook for 1 minute.\n4. Add sweet potatoes and chickpeas.\n5. Pour in coconut milk and bring to a simmer.\n6. Cook for 20 minutes until sweet potatoes are tender.\n7. Stir in spinach and cook until wilted.\n8. Serve over rice or with naan bread.",
+      "calories": "420",
+      "time": "30",
+      "protein": "14",
+      "fat": "18",
+      "carb": "56",
+      "tags": ["vegan", "dinner", "curry", "comfort-food"],
+      "imageUrl": "https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd"
+    },
+    {
+      "name": "Grilled Chicken Wrap",
+      "ingredientsList": [
+        {
+          "name": "Chicken breast",
+          "amount": "150",
+          "unit": "g"
+        },
+        {
+          "name": "Whole wheat tortilla",
+          "amount": "1",
+          "unit": "pcs"
+        },
+        {
+          "name": "Lettuce",
+          "amount": "50",
+          "unit": "g"
+        },
+        {
+          "name": "Tomato",
+          "amount": "1",
+          "unit": "pcs"
+        },
+        {
+          "name": "Red onion",
+          "amount": "30",
+          "unit": "g"
+        },
+        {
+          "name": "Greek yogurt",
+          "amount": "40",
+          "unit": "g"
+        },
+        {
+          "name": "Cucumber",
+          "amount": "50",
+          "unit": "g"
+        }
+      ],
+      "instructions": "1. Grill chicken breast seasoned with salt, pepper, and herbs.\n2. Let chicken rest for 5 minutes, then slice.\n3. Warm tortilla in a pan or microwave.\n4. Spread Greek yogurt on the tortilla.\n5. Layer lettuce, sliced tomato, cucumber, and red onion.\n6. Add sliced grilled chicken.\n7. Fold sides of tortilla and roll tightly.\n8. Cut in half and serve.",
+      "calories": "380",
+      "time": "15",
+      "protein": "35",
+      "fat": "10",
+      "carb": "38",
+      "tags": ["lunch", "high-protein", "quick", "wrap"],
+      "imageUrl": "https://images.unsplash.com/photo-1626700051175-6818013e1d4f"
+    }
+  ]
+}

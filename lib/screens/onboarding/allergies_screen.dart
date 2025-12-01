@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'meal_preferences_screen.dart';
 import '/models/onboarding_data.dart';
+import 'nutrition_goals_screen.dart';
 
 class AllergiesScreen extends StatefulWidget {
   final OnboardingData onboardingData;
@@ -69,7 +69,7 @@ class _AllergiesScreenState extends State<AllergiesScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => MealPreferencesScreen(
+                    builder: (context) => NutritionGoalsScreen(
                       onboardingData: widget.onboardingData,
                     ),
                   ),

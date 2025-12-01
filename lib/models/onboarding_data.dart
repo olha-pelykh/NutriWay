@@ -11,6 +11,10 @@ class OnboardingData {
   List<String>? allergies;
   List<String>? mealTypes;
   int? snacksCount;
+  int? calories;
+  int? protein;
+  int? fats;
+  int? carbs;
 
   OnboardingData({
     this.firstName,
@@ -25,6 +29,10 @@ class OnboardingData {
     this.allergies,
     this.mealTypes,
     this.snacksCount,
+    this.calories,
+    this.protein,
+    this.fats,
+    this.carbs,
   });
 
   Map<String, dynamic> toMap() {
@@ -41,6 +49,10 @@ class OnboardingData {
       'allergies': allergies,
       'mealTypes': mealTypes,
       'snacksCount': snacksCount,
+      'calories': calories,
+      'protein': protein,
+      'fats': fats,
+      'carbs': carbs,
     };
   }
 
