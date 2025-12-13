@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+import 'dart:convert';
 
 class CreateRecipeScreen extends StatefulWidget {
   final String? recipeId;
@@ -20,7 +23,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   final fatController = TextEditingController();
   final carbController = TextEditingController();
   final tagController = TextEditingController();
-  final imageUrlController = TextEditingController();
+  
+  // Image handling
+  File? _selectedImage;
+  String? _uploadedImageUrl;
+  final ImagePicker _picker = ImagePicker();
   
   // Ingredient fields
   final ingredientNameController = TextEditingController();
@@ -48,7 +55,30 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     proteinController.text = data['protein']?.toString() ?? '';
     fatController.text = data['fat']?.toString() ?? '';
     carbController.text = data['carb']?.toString() ?? '';
-    imageUrlController.text = data['imageUrl'] ?? '';
+    
+    // Validate base64 image before loading
+    final imageUrl = data['imageUrl'] ?? '';
+    if (imageUrl.isNotEmpty && imageUrl.startsWith('data:image')) {
+      try {
+        // Try to decode to validate
+        final base64String = imageUrl.split(',')[1];
+        base64Decode(base64String);
+        _uploadedImageUrl = imageUrl; // Valid base64
+      } catch (e) {
+        // Invalid base64, clear it
+        _uploadedImageUrl = '';
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Recipe image is corrupted. Please upload a new one.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      }
+    } else {
+      _uploadedImageUrl = imageUrl;
+    }
     
     // Load ingredients
     if (data['ingredientsList'] != null) {
@@ -102,8 +132,90 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     });
   }
 
+  Future<void> _pickImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1080,
+        imageQuality: 85,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _selectedImage = File(pickedFile.path);
+          _uploadedImageUrl = null; // Clear previous URL
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error picking image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<String?> _convertImageToBase64() async {
+    if (_selectedImage == null) {
+      return _uploadedImageUrl; // Return existing base64 if no new image
+    }
+
+    try {
+      // Check if file exists
+      if (!await _selectedImage!.exists()) {
+        throw Exception('Image file does not exist');
+      }
+
+      // Show processing message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Processing image...'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+
+      // Read file as bytes
+      final bytes = await _selectedImage!.readAsBytes();
+      
+      // Convert to base64
+      final base64String = base64Encode(bytes);
+      
+      // Add data URI prefix for proper image display
+      final dataUri = 'data:image/jpeg;base64,$base64String';
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Image processed successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+
+      return dataUri;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error processing image: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
   Future<void> _saveRecipe() async {
     setState(() => isLoading = true);
+    
+    // Convert image to base64 if a new one was selected
+    String? imageUrl = await _convertImageToBase64();
     
     final recipeData = {
       'name': nameController.text,
@@ -116,7 +228,7 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       'carb': carbController.text,
       'tags': tags,
       'tag': tags.isNotEmpty ? tags.first : '', // Keep for backward compatibility
-      'imageUrl': imageUrlController.text,
+      'imageUrl': imageUrl ?? '',
     };
     
     if (widget.recipeId != null) {
@@ -471,18 +583,128 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
               ),
             ],
             const SizedBox(height: 16),
-            TextField(
-              controller: imageUrlController,
-              style: const TextStyle(fontFamily: 'Josefin Sans'),
-              decoration: InputDecoration(
-                labelText: 'Image URL',
-                labelStyle: const TextStyle(fontFamily: 'Josefin Sans'),
-                filled: true,
-                fillColor: const Color(0xFFE8E8E8),
-                border: OutlineInputBorder(
+            
+            // Image Upload Section
+            const Text(
+              'Recipe Image',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Josefin Sans',
+              ),
+            ),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 200,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8E8E8),
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  border: Border.all(color: const Color(0xFFCCCCCC), width: 2),
                 ),
+                child: _selectedImage != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.file(
+                          _selectedImage!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
+                      )
+                    : _uploadedImageUrl != null && _uploadedImageUrl!.isNotEmpty
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: _uploadedImageUrl!.startsWith('data:image')
+                                ? Builder(
+                                    builder: (context) {
+                                      try {
+                                        final base64String = _uploadedImageUrl!.split(',')[1];
+                                        final bytes = base64Decode(base64String);
+                                        return Image.memory(
+                                          bytes,
+                                          fit: BoxFit.cover,
+                                          width: double.infinity,
+                                          errorBuilder: (context, error, stackTrace) {
+                                            return const Center(
+                                              child: Column(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(Icons.add_photo_alternate, size: 64, color: Colors.grey),
+                                                  SizedBox(height: 8),
+                                                  Text(
+                                                    'Tap to select image',
+                                                    style: TextStyle(
+                                                      fontFamily: 'Josefin Sans',
+                                                      color: Colors.grey,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            );
+                                          },
+                                        );
+                                      } catch (e) {
+                                        // If base64 decode fails, show placeholder
+                                        return const Center(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(Icons.broken_image, size: 64, color: Colors.grey),
+                                              SizedBox(height: 8),
+                                              Text(
+                                                'Invalid image. Tap to select new one',
+                                                style: TextStyle(
+                                                  fontFamily: 'Josefin Sans',
+                                                  color: Colors.grey,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      }
+                                    },
+                                  )
+                                : Image.network(
+                                    _uploadedImageUrl!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return const Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.add_photo_alternate, size: 64, color: Colors.grey),
+                                            SizedBox(height: 8),
+                                            Text(
+                                              'Tap to select image',
+                                              style: TextStyle(
+                                                fontFamily: 'Josefin Sans',
+                                                color: Colors.grey,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                          )
+                        : const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.add_photo_alternate, size: 64, color: Colors.grey),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Tap to select image from gallery',
+                                  style: TextStyle(
+                                    fontFamily: 'Josefin Sans',
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
               ),
             ),
             const SizedBox(height: 24),

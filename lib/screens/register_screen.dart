@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '/services/auth_service.dart';
+import 'package:provider/provider.dart';
+import '/providers/auth_provider.dart';
 
 class RegisterScreen extends StatefulWidget {
   final VoidCallback onToggle;
@@ -14,9 +15,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
   bool agreedToTerms = false;
-  bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
@@ -36,32 +35,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    final authProvider = context.read<AuthProvider>();
+    
+    final success = await authProvider.register(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
 
-    try {
-      await _authService.registerWithEmailPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
-      );
+    if (!mounted) return;
 
-      if (!mounted) return;
-
-      // Show verification email sent message
+    if (!success) {
       _showSnackBar(
-        'Verification email sent! Please check your inbox.',
-        Colors.green,
+        authProvider.errorMessage ?? 'Failed to register',
+        Colors.red,
       );
-
-      // Don't navigate - let AuthWrapper handle it
-      // AuthWrapper will show EmailVerificationScreen
-    } catch (e) {
-      if (!mounted) return;
-      _showSnackBar(e.toString(), Colors.red);
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      return;
     }
+
+    // Show verification email sent message
+    _showSnackBar(
+      'Verification email sent! Please check your inbox.',
+      Colors.green,
+    );
   }
 
   void _showSnackBar(String message, Color color) {
@@ -97,6 +92,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -233,7 +230,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: _isLoading ? null : _handleSignUp,
+                onTap: authProvider.isLoading ? null : _handleSignUp,
                 child: Container(
                   width: double.infinity,
                   height: 56,
@@ -243,7 +240,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     borderRadius: BorderRadius.circular(28),
                   ),
                   child: Center(
-                    child: _isLoading
+                    child: authProvider.isLoading
                         ? const CircularProgressIndicator()
                         : const Text(
                             'Sign up',

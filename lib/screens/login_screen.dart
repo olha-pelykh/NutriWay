@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'forgot_password_screen.dart';
-import '/services/auth_service.dart';
+import '/providers/auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   final VoidCallback onToggle;
@@ -15,8 +16,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authService = AuthService();
-  bool _isLoading = false;
   bool _obscurePassword = true;
 
   @override
@@ -31,36 +30,29 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    setState(() => _isLoading = true);
+    final authProvider = context.read<AuthProvider>();
+    
+    final success = await authProvider.signIn(
+      email: _emailController.text.trim(),
+      password: _passwordController.text.trim(),
+    );
 
-    try {
-      await _authService.signInWithEmailPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+    if (!mounted) return;
+
+    if (!success) {
+      _showSnackBar(
+        authProvider.errorMessage ?? 'Failed to sign in',
+        Colors.red,
       );
+      return;
+    }
 
-      if (!mounted) return;
-
-      // Check if email is verified
-      if (!_authService.isEmailVerified) {
-        _showSnackBar(
-          'Please verify your email before signing in',
-          Colors.orange,
-        );
-        await _authService.signOut();
-        return;
-      }
-
-      // Navigate back to trigger AuthWrapper to handle navigation
-      if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/', (route) => false);
-    } catch (e) {
-      if (!mounted) return;
-      _showSnackBar(e.toString(), Colors.red);
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+    if (!authProvider.isEmailVerified) {
+      _showSnackBar(
+        'Please verify your email before signing in',
+        Colors.orange,
+      );
+      await authProvider.signOut();
     }
   }
 
@@ -94,6 +86,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -222,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: _isLoading ? null : _handleSignIn,
+                onTap: authProvider.isLoading ? null : _handleSignIn,
                 child: Container(
                   width: double.infinity,
                   height: 56,
@@ -232,7 +226,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     borderRadius: BorderRadius.circular(28),
                   ),
                   child: Center(
-                    child: _isLoading
+                    child: authProvider.isLoading
                         ? const CircularProgressIndicator()
                         : const Text(
                             'Sign in',

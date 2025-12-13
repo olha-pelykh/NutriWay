@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '/utils/image_helper.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import 'dart:io';
@@ -506,9 +507,12 @@ class _RecipesScreenState extends State<RecipesScreen> {
                               Center(
                                 child: ClipRRect(
                                   borderRadius: BorderRadius.circular(20),
-                                  child: data['imageUrl'] != null && (data['imageUrl'] as String).startsWith('http')
-                                      ? Image.network(data['imageUrl'], width: 280, height: 180, fit: BoxFit.cover)
-                                      : Container(width: 280, height: 180, color: Colors.grey[300], child: const Icon(Icons.image, size: 60)),
+                                  child: ImageHelper.buildRecipeImage(
+                                    imageUrl: data['imageUrl'] as String?,
+                                    width: 280,
+                                    height: 180,
+                                    fit: BoxFit.cover,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 16),
@@ -646,9 +650,12 @@ class _RecipesScreenState extends State<RecipesScreen> {
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: data['imageUrl'] != null && (data['imageUrl'] as String).startsWith('http')
-                            ? Image.network(data['imageUrl'], width: 100, height: 100, fit: BoxFit.cover)
-                            : Container(width: 100, height: 100, color: Colors.grey[300], child: const Icon(Icons.image, size: 40)),
+                        child: ImageHelper.buildRecipeImage(
+                          imageUrl: data['imageUrl'] as String?,
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       const SizedBox(width: 18),
                       Expanded(

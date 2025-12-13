@@ -153,25 +153,32 @@ class UserDataService {
   Future<Map<String, dynamic>?> getDailyLog(DateTime date) async {
     if (currentUserId == null) return null;
     final logId = date.toIso8601String().substring(0, 10);
-    final doc = await _firestore
-        .collection('users')
-        .doc(currentUserId)
-        .collection('dailyLogs')
-        .doc(logId)
-        .get();
-    final data = doc.data();
-    if (data == null) {
-      // Якщо запису немає, повертаємо порожні поля
-      return {
-        'date': logId,
-        'waterMl': 0,
-        'breakfast': [],
-        'lunch': [],
-        'dinner': [],
-        'snacks': [],
-      };
+    try {
+      final doc = await _firestore
+          .collection('users')
+          .doc(currentUserId)
+          .collection('dailyLogs')
+          .doc(logId)
+          .get()
+          .timeout(const Duration(seconds: 10));
+
+      final data = doc.data();
+      if (data == null) {
+        return {
+          'date': logId,
+          'waterMl': 0,
+          'breakfast': [],
+          'lunch': [],
+          'dinner': [],
+          'snacks': [],
+        };
+      }
+      return data;
+    } catch (e, st) {
+      print('Error in getDailyLog for user $currentUserId, date $logId: $e');
+      print(st);
+      return null;
     }
-    return data;
   }
 
   // Отримати всі логи за місяць

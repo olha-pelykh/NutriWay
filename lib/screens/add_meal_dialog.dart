@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '/utils/image_helper.dart';
 
 Future<double?> _showWeightDialog(BuildContext context) async {
   final controller = TextEditingController();
@@ -109,7 +110,7 @@ class AddMealDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      backgroundColor: Colors.white, // Ensure dialog background is white
+      backgroundColor: Colors.white, 
       child: SizedBox(
         width: 350,
         height: 500,
@@ -149,7 +150,6 @@ class AddMealDialog extends StatelessWidget {
                     itemBuilder: (context, index) {
                       final data = recipes[index].data() as Map<String, dynamic>;
                       final imageUrl = data['imageUrl'] as String?;
-                      final isNetworkImage = imageUrl != null && imageUrl.startsWith('http');
                       return InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () async {
@@ -173,9 +173,12 @@ class AddMealDialog extends StatelessWidget {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: isNetworkImage
-                                    ? Image.network(imageUrl, width: 56, height: 56, fit: BoxFit.cover, errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image))
-                                    : Container(width: 56, height: 56, color: Colors.grey[300], child: const Icon(Icons.image, size: 32)),
+                                child: ImageHelper.buildRecipeImage(
+                                  imageUrl: imageUrl,
+                                  width: 56,
+                                  height: 56,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(

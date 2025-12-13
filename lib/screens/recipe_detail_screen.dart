@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'create_recipe_screen.dart';
+import '/utils/image_helper.dart';
 
 class RecipeDetailScreen extends StatelessWidget {
   final String? recipeId;
@@ -59,25 +60,12 @@ class RecipeDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 24.0),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
-                  child: recipeData['imageUrl'] != null && (recipeData['imageUrl'] as String).startsWith('http')
-                      ? Image.network(
-                          recipeData['imageUrl'],
-                          width: double.infinity,
-                          height: 280,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            width: double.infinity,
-                            height: 280,
-                            color: Colors.grey[300],
-                            child: const Icon(Icons.broken_image, size: 80, color: Colors.grey),
-                          ),
-                        )
-                      : Container(
-                          width: double.infinity,
-                          height: 280,
-                          color: Colors.grey[300],
-                          child: const Icon(Icons.image, size: 80, color: Colors.grey),
-                        ),
+                  child: ImageHelper.buildRecipeImage(
+                    imageUrl: recipeData['imageUrl'] as String?,
+                    width: double.infinity,
+                    height: 280,
+                    fit: BoxFit.cover,
+                  ),
                 ),
               ),
               

@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 import 'register_screen.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'onboarding/personal_info_screen.dart';
-import '/services/auth_service.dart';
+import '/providers/auth_provider.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -14,7 +15,6 @@ class AuthWrapper extends StatefulWidget {
 }
 
 class _AuthWrapperState extends State<AuthWrapper> {
-  final _authService = AuthService();
   bool showLogin = false;
 
   void toggleScreen() {
@@ -25,33 +25,30 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: _authService.authStateChanges,
-      builder: (context, snapshot) {
-        // Show loading indicator while checking auth state
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(
-              child: CircularProgressIndicator(),
-            ),
-          );
-        }
+    final authProvider = context.watch<AuthProvider>();
 
-        if (snapshot.hasData && snapshot.data != null) {
-          final user = snapshot.data!;
-          
-          if (user.emailVerified) {
-            return const HomeScreen();
-          } else {
-            return EmailVerificationScreen(user: user);
-          }
-        }
+    // Show loading indicator while checking auth state
+    if (authProvider.isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-        return showLogin 
-            ? LoginScreen(onToggle: toggleScreen)
-            : RegisterScreen(onToggle: toggleScreen);
-      },
-    );
+    if (authProvider.isAuthenticated && authProvider.user != null) {
+      final user = authProvider.user!;
+      
+      if (user.emailVerified) {
+        return const HomeScreen();
+      } else {
+        return EmailVerificationScreen(user: user);
+      }
+    }
+
+    return showLogin 
+        ? LoginScreen(onToggle: toggleScreen)
+        : RegisterScreen(onToggle: toggleScreen);
   }
 }
 
@@ -65,15 +62,12 @@ class EmailVerificationScreen extends StatefulWidget {
 }
 
 class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
-  final _authService = AuthService();
   bool _isResending = false;
 
   Future<void> _checkEmailVerified() async {
-    await _authService.reloadUser();
+    final authProvider = context.read<AuthProvider>();
     
-    final currentUser = _authService.currentUser;
-    await currentUser?.reload();
-    final isVerified = currentUser?.emailVerified ?? false;
+    final isVerified = await authProvider.checkEmailVerified();
     
     if (isVerified) {
       if (!mounted) return;
@@ -97,29 +91,28 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
   Future<void> _resendVerificationEmail() async {
     setState(() => _isResending = true);
     
-    try {
-      await _authService.resendEmailVerification();
-      
-      if (!mounted) return;
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.resendEmailVerification();
+    
+    if (!mounted) return;
+    
+    if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Verification email sent! Check your inbox.'),
           backgroundColor: Colors.green,
         ),
       );
-    } catch (e) {
-      if (!mounted) return;
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString()),
+          content: Text(authProvider.errorMessage ?? 'Failed to send email'),
           backgroundColor: Colors.red,
         ),
       );
-    } finally {
-      if (mounted) {
-        setState(() => _isResending = false);
-      }
     }
+    
+    setState(() => _isResending = false);
   }
 
   @override
@@ -254,27 +247,27 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                   );
 
                   if (shouldDelete == true) {
-                    try {
-                      // Delete the unverified account
-                      await _authService.deleteAccount();
-                      
-                      if (!mounted) return;
+                    final authProvider = context.read<AuthProvider>();
+                    final success = await authProvider.deleteAccount();
+                    
+                    if (!mounted) return;
+                    
+                    if (success) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Account deleted successfully'),
                           backgroundColor: Colors.green,
                         ),
                       );
-                    } catch (e) {
-                      if (!mounted) return;
+                    } else {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('Failed to delete account: ${e.toString()}'),
+                          content: Text(authProvider.errorMessage ?? 'Failed to delete account'),
                           backgroundColor: Colors.red,
                         ),
                       );
                       // Sign out anyway
-                      await _authService.signOut();
+                      await authProvider.signOut();
                     }
                   }
                 },

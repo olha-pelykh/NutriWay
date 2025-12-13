@@ -7,6 +7,7 @@ import 'recipes_screen.dart';
 import 'auth_wrapper.dart';
 import '/services/auth_service.dart';
 import '/services/user_data_service.dart';
+import '/utils/image_helper.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -22,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
     String calories = '';
     String firstName = '';
     String lastName = '';
+    String? avatar;
   final _authService = AuthService();
   int selectedBottomIndex = 0;
   int selectedDay = 21;
@@ -51,25 +53,38 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadLogForDate(DateTime date) async {
     setState(() => isLoadingLog = true);
     final userDataService = UserDataService();
-    final log = await userDataService.getDailyLog(date);
-    if (log != null) {
-      setState(() {
-        selectedWaterCups = ((log['waterMl'] ?? 0) / 250).round();
-        breakfast = List<Map<String, dynamic>>.from((log['breakfast'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
-        lunch = List<Map<String, dynamic>>.from((log['lunch'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
-        dinner = List<Map<String, dynamic>>.from((log['dinner'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
-        snacks = List<Map<String, dynamic>>.from((log['snacks'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
-      });
-    } else {
-      setState(() {
-        selectedWaterCups = 0;
-        breakfast = [];
-        lunch = [];
-        dinner = [];
-        snacks = [];
-      });
+    try {
+      final log = await userDataService.getDailyLog(date);
+      if (log != null) {
+        setState(() {
+          selectedWaterCups = ((log['waterMl'] ?? 0) / 250).round();
+          breakfast = List<Map<String, dynamic>>.from((log['breakfast'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
+          lunch = List<Map<String, dynamic>>.from((log['lunch'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
+          dinner = List<Map<String, dynamic>>.from((log['dinner'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
+          snacks = List<Map<String, dynamic>>.from((log['snacks'] ?? []).map((item) => item is Map ? Map<String, dynamic>.from(item) : {'name': item.toString()}));
+        });
+      } else {
+        setState(() {
+          selectedWaterCups = 0;
+          breakfast = [];
+          lunch = [];
+          dinner = [];
+          snacks = [];
+        });
+      }
+    } catch (e, st) {
+      debugPrint('Error loading daily log: $e\n$st');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to load daily log. Check your connection.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isLoadingLog = false);
     }
-    setState(() => isLoadingLog = false);
 
   }
 
@@ -84,6 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
         calories = data['calories']?.toString() ?? '';
         firstName = data['firstName']?.toString() ?? '';
         lastName = data['lastName']?.toString() ?? '';
+        avatar = data['avatar']?.toString();
       });
     }
   }
@@ -167,13 +183,14 @@ class _HomeScreenState extends State<HomeScreen> {
             );
             await _loadUserMacros();
           },
-          child: Container(
-            width: 60,
-            height: 60,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              image: const DecorationImage(
-                image: NetworkImage('https://i.pravatar.cc/150?img=12'),
+          child: ClipOval(
+            child: SizedBox(
+              width: 60,
+              height: 60,
+              child: ImageHelper.buildRecipeImage(
+                imageUrl: avatar ?? 'https://i.pravatar.cc/150?img=12',
+                width: 60,
+                height: 60,
                 fit: BoxFit.cover,
               ),
             ),
@@ -565,7 +582,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 final index = entry.key;
                 final meal = entry.value;
                 final imageUrl = meal['imageUrl'] as String?;
-                final hasImage = imageUrl != null && imageUrl.isNotEmpty && imageUrl.startsWith('http');
+                final hasImage = imageUrl != null && imageUrl.isNotEmpty && (imageUrl.startsWith('http') || imageUrl.startsWith('data:image'));
                 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
@@ -581,16 +598,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         if (hasImage) ...[
                           ClipRRect(
                             borderRadius: BorderRadius.circular(8),
-                            child: Image.network(
-                              imageUrl,
+                            child: SizedBox(
                               width: 60,
                               height: 60,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
+                              child: ImageHelper.buildRecipeImage(
+                                imageUrl: imageUrl,
                                 width: 60,
                                 height: 60,
-                                color: Colors.grey[300],
-                                child: const Icon(Icons.broken_image, size: 30),
+                                fit: BoxFit.cover,
                               ),
                             ),
                           ),
