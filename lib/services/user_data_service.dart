@@ -8,7 +8,6 @@ class UserDataService {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
-  /// Збереження даних онбордингу користувача
   Future<void> saveUserOnboardingData({
     required String firstName,
     required String lastName,

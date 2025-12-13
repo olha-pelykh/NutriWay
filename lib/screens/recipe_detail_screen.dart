@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'create_recipe_screen.dart';
 import '/utils/image_helper.dart';
 
@@ -33,7 +34,10 @@ class RecipeDetailScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    if (recipeId != null)
+                    // Показувати кнопку редагування тільки автору рецепту
+                    if (recipeId != null && 
+                        recipeData['authorId'] != null &&
+                        FirebaseAuth.instance.currentUser?.uid == recipeData['authorId'])
                       IconButton(
                         icon: const Icon(Icons.edit),
                         onPressed: () async {

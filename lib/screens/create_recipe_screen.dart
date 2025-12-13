@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -212,38 +213,94 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   }
 
   Future<void> _saveRecipe() async {
+    // Валідація: перевірка назви рецепту
+    if (nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a recipe name'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Перевірка автентифікації
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('You must be logged in to save a recipe'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => isLoading = true);
     
-    // Convert image to base64 if a new one was selected
-    String? imageUrl = await _convertImageToBase64();
-    
-    final recipeData = {
-      'name': nameController.text,
-      'ingredientsList': ingredients,
-      'instructions': instructionsController.text,
-      'calories': caloriesController.text,
-      'time': timeController.text,
-      'protein': proteinController.text,
-      'fat': fatController.text,
-      'carb': carbController.text,
-      'tags': tags,
-      'tag': tags.isNotEmpty ? tags.first : '', // Keep for backward compatibility
-      'imageUrl': imageUrl ?? '',
-    };
-    
-    if (widget.recipeId != null) {
-      // Update existing recipe
-      await FirebaseFirestore.instance
-          .collection('recipes')
-          .doc(widget.recipeId)
-          .update(recipeData);
-    } else {
-      // Create new recipe
-      await FirebaseFirestore.instance.collection('recipes').add(recipeData);
+    try {
+      // Convert image to base64 if a new one was selected
+      String? imageUrl = await _convertImageToBase64();
+      
+      // Конвертуємо числові поля в числа (Firestore rules очікують числа)
+      final double calories = double.tryParse(caloriesController.text) ?? 0;
+      final double protein = double.tryParse(proteinController.text) ?? 0;
+      final double fat = double.tryParse(fatController.text) ?? 0;
+      final double carb = double.tryParse(carbController.text) ?? 0;
+      final int time = int.tryParse(timeController.text) ?? 0;
+      
+      final recipeData = {
+        'name': nameController.text.trim(),
+        'ingredientsList': ingredients,
+        'instructions': instructionsController.text,
+        'calories': calories,
+        'time': time,
+        'protein': protein,
+        'fat': fat,
+        'carb': carb,
+        'tags': tags,
+        'tag': tags.isNotEmpty ? tags.first : '', // Keep for backward compatibility
+        'imageUrl': imageUrl ?? _uploadedImageUrl ?? '',
+        'authorId': currentUser.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      };
+      
+      if (widget.recipeId != null) {
+        // Update existing recipe - не включаємо createdAt при оновленні
+        final updateData = Map<String, dynamic>.from(recipeData);
+        updateData.remove('createdAt'); // Не оновлюємо дату створення
+        
+        await FirebaseFirestore.instance
+            .collection('recipes')
+            .doc(widget.recipeId)
+            .update(updateData);
+      } else {
+        await FirebaseFirestore.instance.collection('recipes').add(recipeData);
+      }
+      
+      setState(() => isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(widget.recipeId != null ? 'Recipe updated!' : 'Recipe created!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      setState(() => isLoading = false);
+      debugPrint('Error saving recipe: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving recipe: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
     }
-    
-    setState(() => isLoading = false);
-    if (mounted) Navigator.of(context).pop(true);
   }
 
   @override

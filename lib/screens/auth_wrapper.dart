@@ -27,7 +27,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
   Widget build(BuildContext context) {
     final authProvider = context.watch<AuthProvider>();
 
-    // Show loading indicator while checking auth state
     if (authProvider.isLoading) {
       return const Scaffold(
         body: Center(
@@ -222,7 +221,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
               const SizedBox(height: 24),
               TextButton(
                 onPressed: () async {
-                  // Show confirmation dialog
                   final shouldDelete = await showDialog<bool>(
                     context: context,
                     builder: (context) => AlertDialog(
@@ -266,7 +264,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           backgroundColor: Colors.red,
                         ),
                       );
-                      // Sign out anyway
                       await authProvider.signOut();
                     }
                   }

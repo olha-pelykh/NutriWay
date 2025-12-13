@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '/utils/image_helper.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
@@ -72,6 +73,8 @@ class _RecipesScreenState extends State<RecipesScreen> {
                   ? recipe['tags'][0] 
                   : '',
               'imageUrl': recipe['imageUrl'] ?? '',
+              'authorId': FirebaseAuth.instance.currentUser?.uid ?? '',
+              'createdAt': FieldValue.serverTimestamp(),
             });
             importedCount++;
           } catch (recipeError) {
@@ -283,7 +286,6 @@ class _RecipesScreenState extends State<RecipesScreen> {
       selected: isSelected,
       onSelected: (selected) {
         if (selected) {
-          // Toggle order if clicking same sort option
           if (sortBy == value) {
             setDialogState(() => sortAscending = !sortAscending);
             setState(() => sortAscending = !sortAscending);
@@ -695,78 +697,95 @@ class _RecipesScreenState extends State<RecipesScreen> {
                           ],
                         ),
                       ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: () async {
-                          final shouldDelete = await showDialog<bool>(
-                            context: context,
-                            builder: (context) => AlertDialog(
-                              backgroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              title: const Text(
-                                'Delete Recipe',
-                                style: TextStyle(
-                                  fontFamily: 'Josefin Sans',
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                      // Показувати кнопку видалення тільки автору рецепту
+                      if (data['authorId'] != null &&
+                          FirebaseAuth.instance.currentUser?.uid == data['authorId'])
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () async {
+                            final shouldDelete = await showDialog<bool>(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
                                 ),
-                              ),
-                              content: const Text(
-                                'Are you sure you want to delete this recipe?',
-                                style: TextStyle(
-                                  fontFamily: 'Josefin Sans',
-                                  color: Colors.black,
-                                ),
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
-                                  child: const Text(
-                                    'Cancel',
-                                    style: TextStyle(
-                                      fontFamily: 'Josefin Sans',
-                                      color: Colors.black,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                title: const Text(
+                                  'Delete Recipe',
+                                  style: TextStyle(
+                                    fontFamily: 'Josefin Sans',
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black,
                                   ),
                                 ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(true),
-                                  child: const Text(
-                                    'Delete',
-                                    style: TextStyle(
-                                      fontFamily: 'Josefin Sans',
-                                      color: Colors.red,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                content: const Text(
+                                  'Are you sure you want to delete this recipe?',
+                                  style: TextStyle(
+                                    fontFamily: 'Josefin Sans',
+                                    color: Colors.black,
                                   ),
                                 ),
-                              ],
-                            ),
-                          );
-                          
-                          if (shouldDelete == true) {
-                            await FirebaseFirestore.instance
-                                .collection('recipes')
-                                .doc(recipes[index].id)
-                                .delete();
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(false),
+                                    child: const Text(
+                                      'Cancel',
+                                      style: TextStyle(
+                                        fontFamily: 'Josefin Sans',
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.of(context).pop(true),
+                                    child: const Text(
+                                      'Delete',
+                                      style: TextStyle(
+                                        fontFamily: 'Josefin Sans',
+                                        color: Colors.red,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
                             
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Recipe deleted successfully',
-                                    style: TextStyle(fontFamily: 'Josefin Sans'),
-                                  ),
-                                  backgroundColor: Colors.black,
-                                ),
-                              );
+                            if (shouldDelete == true) {
+                              try {
+                                await FirebaseFirestore.instance
+                                    .collection('recipes')
+                                    .doc(recipes[index].id)
+                                    .delete();
+                                
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Recipe deleted successfully',
+                                        style: TextStyle(fontFamily: 'Josefin Sans'),
+                                      ),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Error deleting recipe: $e',
+                                        style: const TextStyle(fontFamily: 'Josefin Sans'),
+                                      ),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
                             }
-                          }
-                        },
-                      ),
+                          },
+                        ),
                     ],
                   ),
                 ),

@@ -1,10 +1,114 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Правила для колекції users
+    
+    // Перевірка: чи користувач автентифікований
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Перевірка: чи поточний користувач є власником документа
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Перевірка: чи поточний користувач є автором рецепту
+    function isRecipeAuthor() {
+      return isAuthenticated() && resource.data.authorId == request.auth.uid;
+    }
+    
+    // Перевірка: чи нові дані рецепту містять правильний authorId
+    function hasValidAuthorId() {
+      return request.resource.data.authorId == request.auth.uid;
+    }
+    
+    // Перевірка: чи рядок не порожній
+    function isNonEmptyString(field) {
+      return field is string && field.size() > 0;
+    }
+    
+    // Перевірка: чи число є додатнім або нулем (або рядок-число)
+    function isPositiveNumberOrString(field) {
+      return field is number && field >= 0 || field is string;
+    }
+    
+    // Перевірка: чи значення є числом >= 0
+    function isPositiveNumber(field) {
+      return field is number && field >= 0;
+    }
+    
+    // Перевірка розміру base64 зображення (макс 1MB в base64 ≈ 1.4MB тексту)
+    function isValidImageSize(imageUrl) {
+      return !('imageUrl' in request.resource.data) || 
+             request.resource.data.imageUrl == null ||
+             request.resource.data.imageUrl.size() <= 1500000;
+    }
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
     match /users/{userId} {
-      // Дозволити читання та запис тільки власних даних
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      allow read: if isOwner(userId);
+      
+      allow create: if isOwner(userId)
+        && isNonEmptyString(request.resource.data.firstName)
+        && isNonEmptyString(request.resource.data.lastName)
+        && isNonEmptyString(request.resource.data.email)
+        && isValidImageSize(request.resource.data);
+      
+      allow update: if isOwner(userId)
+        && isValidImageSize(request.resource.data)
+        && (!('calories' in request.resource.data) || isPositiveNumber(request.resource.data.calories))
+        && (!('protein' in request.resource.data) || isPositiveNumber(request.resource.data.protein))
+        && (!('fats' in request.resource.data) || isPositiveNumber(request.resource.data.fats))
+        && (!('carbs' in request.resource.data) || isPositiveNumber(request.resource.data.carbs))
+        && (!('age' in request.resource.data) || isPositiveNumber(request.resource.data.age))
+        && (!('height' in request.resource.data) || isPositiveNumber(request.resource.data.height))
+        && (!('weight' in request.resource.data) || isPositiveNumber(request.resource.data.weight));
+      
+      allow delete: if isOwner(userId);
+      
+      match /dailyLogs/{logId} {
+        
+        allow read: if isOwner(userId);
+        
+        allow create: if isOwner(userId)
+          && (!('waterMl' in request.resource.data) || isPositiveNumber(request.resource.data.waterMl));
+        
+        allow update: if isOwner(userId)
+          && (!('waterMl' in request.resource.data) || isPositiveNumber(request.resource.data.waterMl));
+        
+        allow delete: if isOwner(userId);
+      }
+    }
+    
+    match /recipes/{recipeId} {
+      
+      allow read: if isAuthenticated();
+      
+      allow create: if isAuthenticated()
+        && hasValidAuthorId()
+        && isNonEmptyString(request.resource.data.name)
+        && isValidImageSize(request.resource.data)
+        && (!('calories' in request.resource.data) || isPositiveNumberOrString(request.resource.data.calories))
+        && (!('protein' in request.resource.data) || isPositiveNumberOrString(request.resource.data.protein))
+        && (!('fat' in request.resource.data) || isPositiveNumberOrString(request.resource.data.fat))
+        && (!('carb' in request.resource.data) || isPositiveNumberOrString(request.resource.data.carb))
+        && (!('time' in request.resource.data) || isPositiveNumberOrString(request.resource.data.time));
+      
+      allow update: if isRecipeAuthor()
+        && request.resource.data.authorId == resource.data.authorId
+        && isValidImageSize(request.resource.data)
+        && (!('calories' in request.resource.data) || isPositiveNumberOrString(request.resource.data.calories))
+        && (!('protein' in request.resource.data) || isPositiveNumberOrString(request.resource.data.protein))
+        && (!('fat' in request.resource.data) || isPositiveNumberOrString(request.resource.data.fat))
+        && (!('carb' in request.resource.data) || isPositiveNumberOrString(request.resource.data.carb))
+        && (!('time' in request.resource.data) || isPositiveNumberOrString(request.resource.data.time));
+      
+      allow delete: if isRecipeAuthor();
     }
   }
 }

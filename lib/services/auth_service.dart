@@ -5,13 +5,10 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Get current user
   User? get currentUser => _auth.currentUser;
 
-  // Auth state changes stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
-  // Register with email & password
   Future<UserCredential?> registerWithEmailPassword({
     required String email,
     required String password,
@@ -22,7 +19,6 @@ class AuthService {
         password: password,
       );
       
-      // Send email verification
       await userCredential.user?.sendEmailVerification();
       
       return userCredential;
@@ -33,7 +29,6 @@ class AuthService {
     }
   }
 
-  // Sign in with email & password
   Future<UserCredential?> signInWithEmailPassword({
     required String email,
     required String password,
@@ -51,7 +46,6 @@ class AuthService {
     }
   }
 
-  // Sign out
   Future<void> signOut() async {
     try {
       await _auth.signOut();
@@ -60,7 +54,6 @@ class AuthService {
     }
   }
 
-  // Send password reset email
   Future<void> sendPasswordResetEmail({required String email}) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
@@ -71,7 +64,6 @@ class AuthService {
     }
   }
 
-  // Resend email verification
   Future<void> resendEmailVerification() async {
     try {
       await currentUser?.sendEmailVerification();
