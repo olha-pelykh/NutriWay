@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'dart:typed_data';
 import 'dart:convert';
 
 class CreateRecipeScreen extends StatefulWidget {
@@ -25,8 +26,9 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
   final carbController = TextEditingController();
   final tagController = TextEditingController();
   
-  // Image handling
-  File? _selectedImage;
+  // Image handling - using XFile for cross-platform (web + mobile) support
+  XFile? _selectedImage;
+  Uint8List? _selectedImageBytes; // For displaying on web
   String? _uploadedImageUrl;
   final ImagePicker _picker = ImagePicker();
   
@@ -143,8 +145,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
       );
 
       if (pickedFile != null) {
+        // Read bytes immediately for cross-platform display
+        final bytes = await pickedFile.readAsBytes();
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImage = pickedFile;
+          _selectedImageBytes = bytes;
           _uploadedImageUrl = null; // Clear previous URL
         });
       }
@@ -163,11 +168,6 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
     }
 
     try {
-      // Check if file exists
-      if (!await _selectedImage!.exists()) {
-        throw Exception('Image file does not exist');
-      }
-
       // Show processing message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -178,8 +178,8 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
         );
       }
 
-      // Read file as bytes
-      final bytes = await _selectedImage!.readAsBytes();
+      // Use already loaded bytes or read from XFile
+      final Uint8List bytes = _selectedImageBytes ?? await _selectedImage!.readAsBytes();
       
       // Convert to base64
       final base64String = base64Encode(bytes);
@@ -660,11 +660,11 @@ class _CreateRecipeScreenState extends State<CreateRecipeScreen> {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: const Color(0xFFCCCCCC), width: 2),
                 ),
-                child: _selectedImage != null
+                child: _selectedImageBytes != null
                     ? ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.file(
-                          _selectedImage!,
+                        child: Image.memory(
+                          _selectedImageBytes!,
                           fit: BoxFit.cover,
                           width: double.infinity,
                         ),
